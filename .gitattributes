@@ -1,1 +1,7 @@
+# Dart dosyalarını Dart olarak tanımla
 *.dart linguist-language=Dart
+
+# C++ dosyalarını dil algılamasından hariç tut
+*.cpp linguist-detectable=false
+*.cxx linguist-detectable=false
+*.h linguist-detectable=false
