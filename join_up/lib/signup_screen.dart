@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:join_up/signup_screen.dart';
+import 'package:join_up/login_screen.dart';
 
-void main() {
-  runApp(const MyApp());
+void main(){
+  runApp (const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -22,21 +22,24 @@ class MyApp extends StatelessWidget {
         textTheme: GoogleFonts.montserratTextTheme(),
         fontFamily: 'Montserrat',
       ),
-      home: const LoginPage(),
+      home: const SignupPage(),
     );
   }
 }
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class SignupPage extends StatefulWidget {
+  const SignupPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<SignupPage> createState() => _SignupPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _SignupPageState extends State<SignupPage> {
   final TextEditingController usernameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
+
   bool obscurePassword = true;
 
   @override
@@ -52,66 +55,23 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 80),
-                  logoField(),
+                  // Üye ol sayfası yazısı gelebilir
                   const SizedBox(height: 80),
                   buildUsernameField(),
                   const SizedBox(height: 20),
-                  buildPasswordField(),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {},
-                      child: Text(
-                        "Şifremi Unuttum",
-                        style: GoogleFonts.montserrat(
-                          color: const Color(0xFF6F2DBD),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  buildLoginButton(),
-                  const SizedBox(height: 40),
-                  Align(),
-                  Text(
-                    "veya şununla giriş yapın",
-                    style: GoogleFonts.montserrat(
-                      color: const Color(0xFF0E1116),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
+                  buildEmailField(),
                   const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      socialLoginButton(
-                        icon: 'assets/google_icon.png',
-                        onPressed: () {
-                          print("Google ile giriş yapılıyor...");
-                        },
-                        iconColor: Colors.red,
-                        fallbackIcon: Icons.g_mobiledata,
-                      ),
-                      const SizedBox(width: 20),
-                      socialLoginButton(
-                        icon: 'assets/facebook_icon.png',
-                        onPressed: () {
-                          print("Facebook ile giriş yapılıyor...");
-                        },
-                        iconColor: Colors.blue,
-                        fallbackIcon: Icons.facebook,
-                      ),
-                    ],
-                  ),
+                  buildPasswordField(),
+                  const SizedBox(height: 20),
+                  buildConfirmPasswordField(),
+                  const SizedBox(height: 20),
+                  buildSignUpButton(),
                   const SizedBox(height: 40),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Hesabınız yok mu?",
+                        "Zaten bir hesabınız var mı?",
                         style: GoogleFonts.montserrat(
                           color: const Color(0xFF0E1116),
                           fontSize: 14,
@@ -121,11 +81,11 @@ class _LoginPageState extends State<LoginPage> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const SignupPage()),
+                            MaterialPageRoute(builder: (context) => const LoginPage()),
                           );
                         },
                         child: Text(
-                          "Kaydolun",
+                          "Oturum Açın",
                           style: GoogleFonts.montserrat(
                             color: const Color(0xFF6F2DBD),
                             fontWeight: FontWeight.bold,
@@ -144,27 +104,8 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget logoField() {
-    return Text(
-      "JoinUp",
-      style: GoogleFonts.montserrat(
-        fontSize: 50,
-        fontWeight: FontWeight.bold,
-        color: const Color(0xFF6F2DBD),
-        shadows: [
-          Shadow(
-            color: const Color(0xFF6F2DBD).withOpacity(0.3),
-            offset: const Offset(0.0, 4.0),
-            blurRadius: 10.0,
-          ),
-        ],
-        letterSpacing: 2.0,
-      ),
-      textAlign: TextAlign.center,
-    );
-  }
 
-  Widget buildUsernameField() {
+  Widget buildUsernameField(){
     return TextFormField(
       controller: usernameController,
       style: GoogleFonts.montserrat(),
@@ -195,6 +136,42 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
+
+
+   Widget buildEmailField(){
+    return TextFormField(
+      controller: usernameController,
+      style: GoogleFonts.montserrat(),
+      decoration: InputDecoration(
+        labelText: "Email",
+        labelStyle: GoogleFonts.montserrat(
+          color: const Color(0xFF0E1116).withOpacity(0.6),
+        ),
+        prefixIcon: Icon(
+          Icons.email,
+          color: const Color(0xFF6F2DBD),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF6F2DBD), width: 2),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+        ),
+      ),
+    );
+  }
+
+
+
 
   Widget buildPasswordField() {
     return TextFormField(
@@ -240,16 +217,59 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget buildLoginButton() {
+
+  Widget buildConfirmPasswordField() {
+    return TextFormField(
+      controller: passwordController,
+      style: GoogleFonts.montserrat(),
+      obscureText: obscurePassword,
+      decoration: InputDecoration(
+        labelText: "Tekrar Şifre",
+        labelStyle: GoogleFonts.montserrat(
+          color: const Color(0xFF0E1116).withOpacity(0.6),
+        ),
+        prefixIcon: Icon(
+          Icons.lock_outline,
+          color: const Color(0xFF6F2DBD),
+        ),
+        suffixIcon: IconButton(
+          icon: Icon(
+            obscurePassword ? Icons.visibility_off : Icons.visibility,
+            color: const Color(0xFF6F2DBD),
+          ),
+          onPressed: () {
+            setState(() {
+              obscurePassword = !obscurePassword;
+            });
+          },
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF6F2DBD), width: 2),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+        ),
+      ),
+    );
+  }
+
+
+
+  Widget buildSignUpButton() {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: () {
-          String username = usernameController.text;
-          String password = passwordController.text;
-          print("Kullanıcı Adı: $username, Şifre: $password");
-        },
+        onPressed: () {},
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF6F2DBD),
           foregroundColor: Colors.white,
@@ -259,7 +279,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         child: Text(
-          "Giriş Yap",
+          "Üye Ol",
           style: GoogleFonts.montserrat(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -269,35 +289,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget socialLoginButton({
-    required String icon,
-    required VoidCallback onPressed,
-    required Color iconColor,
-    required IconData fallbackIcon,
-  }) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: IconButton(
-        onPressed: onPressed,
-        icon: Icon(
-          fallbackIcon,
-          size: 35,
-          color: iconColor,
-        ),
-      ),
-    );
-  }
+
+
 }
