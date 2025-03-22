@@ -54,9 +54,9 @@ class _SignupPageState extends State<SignupPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 80),
-                  // Üye ol sayfası yazısı gelebilir
-                  const SizedBox(height: 80),
+                  const SizedBox(height: 30),
+                  buildHeader(),
+                  const SizedBox(height: 30),
                   buildUsernameField(),
                   const SizedBox(height: 20),
                   buildEmailField(),
@@ -64,10 +64,10 @@ class _SignupPageState extends State<SignupPage> {
                   buildPasswordField(),
                   const SizedBox(height: 20),
                   buildConfirmPasswordField(),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 60),
                   buildSignUpButton(),
                   const SizedBox(height: 40),
-                  Row(
+                  Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
@@ -140,7 +140,7 @@ class _SignupPageState extends State<SignupPage> {
 
    Widget buildEmailField(){
     return TextFormField(
-      controller: usernameController,
+      controller: emailController,
       style: GoogleFonts.montserrat(),
       decoration: InputDecoration(
         labelText: "Email",
@@ -220,7 +220,7 @@ class _SignupPageState extends State<SignupPage> {
 
   Widget buildConfirmPasswordField() {
     return TextFormField(
-      controller: passwordController,
+      controller: confirmPasswordController,
       style: GoogleFonts.montserrat(),
       obscureText: obscurePassword,
       decoration: InputDecoration(
@@ -289,6 +289,50 @@ class _SignupPageState extends State<SignupPage> {
     );
   }
 
+
+
+
+  Widget buildHeader() {
+    return Column(
+      children: [
+        Text(
+          "JoinUp",
+          style: GoogleFonts.montserrat(
+            fontSize: 40,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF6F2DBD),
+            shadows: [
+              Shadow(
+                color: const Color(0xFF6F2DBD).withOpacity(0.3),
+                offset: const Offset(0.0, 4.0),
+                blurRadius: 10.0,
+              ),
+            ],
+            letterSpacing: 2.0,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          "Aramıza katılın",
+          style: GoogleFonts.montserrat(
+            fontSize: 18,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF0E1116),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          "Hesap oluşturarak etkinliklere katılabilir ve yeni insanlarla tanışabilirsiniz",
+          style: GoogleFonts.montserrat(
+            fontSize: 13,
+            color: const Color(0xFF0E1116).withOpacity(0.7),
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
 
 
 }
