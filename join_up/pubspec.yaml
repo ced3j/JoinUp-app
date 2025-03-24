@@ -10,6 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
   google_fonts: ^6.1.0
+  lucide_icons: ^0.257.0
+
+  firebase_auth: ^5.5.1
+  firebase_core: ^3.12.1
 
 dev_dependencies:
   flutter_test:
