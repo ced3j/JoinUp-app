@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:join_up/signup_screen.dart';
+import 'package:join_up/home_screen.dart';
+
 
 void main() {
   runApp(const MyApp());
@@ -249,6 +251,12 @@ class _LoginPageState extends State<LoginPage> {
           String username = usernameController.text;
           String password = passwordController.text;
           print("Kullanıcı Adı: $username, Şifre: $password");
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => HomePage()),
+          );
+
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF6F2DBD),
