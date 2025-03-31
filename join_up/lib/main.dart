@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart'; // Firebase için eklendi
-import 'firebase_options.dart';// Firebase için eklendi
+import 'firebase_options.dart'; // Firebase için eklendi
 import 'login_screen.dart';
 
-void main() async { // Firebase için eklendi (async)
+void main() async {
+  // Firebase için eklendi (async)
 
   WidgetsFlutterBinding.ensureInitialized(); // Firebase için eklendi
 
-  await Firebase.initializeApp( // Firebase için eklendi
+  await Firebase.initializeApp(
+    // Firebase için eklendi
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
@@ -19,9 +21,6 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: LoginPage(),
-      debugShowCheckedModeBanner: false
-    );
+    return MaterialApp(home: LoginPage(), debugShowCheckedModeBanner: false);
   }
 }
