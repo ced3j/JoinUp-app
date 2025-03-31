@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:join_up/signup_screen.dart';
 import 'package:join_up/home_screen.dart';
-
+import 'package:join_up/services/auth_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -37,9 +37,33 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final AuthService authService = AuthService();
+
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool obscurePassword = true;
+
+  void signIn() async {
+    String email = usernameController.text.trim();
+    String password = passwordController.text.trim();
+
+    var user = await authService.signInWithEmailPassword(email, password);
+
+    if (user != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Giriş Başarılı!")));
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomePage()),
+      );
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Giriş Başarısız!")));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +147,9 @@ class _LoginPageState extends State<LoginPage> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const SignupPage()),
+                            MaterialPageRoute(
+                              builder: (context) => const SignupPage(),
+                            ),
                           );
                         },
                         child: Text(
@@ -175,17 +201,17 @@ class _LoginPageState extends State<LoginPage> {
         labelStyle: GoogleFonts.montserrat(
           color: const Color(0xFF0E1116).withOpacity(0.6),
         ),
-        prefixIcon: Icon(
-          Icons.person_outline,
-          color: const Color(0xFF6F2DBD),
-        ),
+        prefixIcon: Icon(Icons.person_outline, color: const Color(0xFF6F2DBD)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFF6F2DBD), width: 2),
@@ -208,10 +234,7 @@ class _LoginPageState extends State<LoginPage> {
         labelStyle: GoogleFonts.montserrat(
           color: const Color(0xFF0E1116).withOpacity(0.6),
         ),
-        prefixIcon: Icon(
-          Icons.lock_outline,
-          color: const Color(0xFF6F2DBD),
-        ),
+        prefixIcon: Icon(Icons.lock_outline, color: const Color(0xFF6F2DBD)),
         suffixIcon: IconButton(
           icon: Icon(
             obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -229,7 +252,10 @@ class _LoginPageState extends State<LoginPage> {
         ),
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFF6F2DBD), width: 2),
@@ -247,17 +273,7 @@ class _LoginPageState extends State<LoginPage> {
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: () {
-          String username = usernameController.text;
-          String password = passwordController.text;
-          print("Kullanıcı Adı: $username, Şifre: $password");
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => HomePage()),
-          );
-
-        },
+        onPressed: signIn,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF6F2DBD),
           foregroundColor: Colors.white,
@@ -300,11 +316,7 @@ class _LoginPageState extends State<LoginPage> {
       ),
       child: IconButton(
         onPressed: onPressed,
-        icon: Icon(
-          fallbackIcon,
-          size: 35,
-          color: iconColor,
-        ),
+        icon: Icon(fallbackIcon, size: 35, color: iconColor),
       ),
     );
   }
