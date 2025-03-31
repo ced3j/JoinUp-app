@@ -39,12 +39,12 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final AuthService authService = AuthService();
 
-  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool obscurePassword = true;
 
   void signIn() async {
-    String email = usernameController.text.trim();
+    String email = emailController.text.trim();
     String password = passwordController.text.trim();
 
     var user = await authService.signInWithEmailPassword(email, password);
@@ -80,7 +80,7 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 80),
                   logoField(),
                   const SizedBox(height: 80),
-                  buildUsernameField(),
+                  buildEmailField(),
                   const SizedBox(height: 20),
                   buildPasswordField(),
                   const SizedBox(height: 12),
@@ -192,12 +192,12 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget buildUsernameField() {
+  Widget buildEmailField() {
     return TextFormField(
-      controller: usernameController,
+      controller: emailController,
       style: GoogleFonts.montserrat(),
       decoration: InputDecoration(
-        labelText: "Kullanıcı Adı",
+        labelText: "Email",
         labelStyle: GoogleFonts.montserrat(
           color: const Color(0xFF0E1116).withOpacity(0.6),
         ),
