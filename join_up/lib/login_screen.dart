@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:join_up/signup_screen.dart';
 import 'package:join_up/home_screen.dart';
+import 'package:join_up/forgotpass_screen.dart';
 import 'package:join_up/services/auth_service.dart';
 
 void main() {
@@ -87,15 +88,23 @@ class _LoginPageState extends State<LoginPage> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {},
-                      child: Text(
-                        "Şifremi Unuttum",
-                        style: GoogleFonts.montserrat(
-                          color: const Color(0xFF6F2DBD),
-                          fontWeight: FontWeight.w500,
+                        onPressed: (){
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ForgotPasswordPage(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          "Şifremi Unuttum",
+                          style: GoogleFonts.montserrat(
+                            color: const Color(0xFF6F2DBD),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
-                    ),
                   ),
                   const SizedBox(height: 30),
                   buildLoginButton(),
