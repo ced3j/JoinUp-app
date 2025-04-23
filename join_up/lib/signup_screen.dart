@@ -1,32 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:join_up/services/auth_service.dart';
 import 'package:join_up/login_screen.dart';
-
-void main(){
-  runApp (const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6F2DBD),
-          secondary: const Color(0xFF0E1116),
-        ),
-        textTheme: GoogleFonts.montserratTextTheme(),
-        fontFamily: 'Montserrat',
-      ),
-      home: const SignupPage(),
-    );
-  }
-}
-
+import 'package:join_up/user_settings.dart';
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
 
@@ -35,12 +11,45 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage> {
+  final AuthService authService = AuthService(); // AuthService başlatalım
+
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController = TextEditingController();
 
   bool obscurePassword = true;
+
+  void signUp() async {
+    String email = emailController.text.trim();
+    String password = passwordController.text.trim();
+    String confirmPassword = confirmPasswordController.text.trim();
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Şifreler uyuşmuyor!")),
+      );
+    
+      return;
+    }
+    
+
+    var user = await authService.signUpWithEmailPassWord(email, password);
+
+    if (user != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Kayıt Başarılı!")),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const UserSettings()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Kayıt Başarısız!")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,34 +76,7 @@ class _SignupPageState extends State<SignupPage> {
                   const SizedBox(height: 60),
                   buildSignUpButton(),
                   const SizedBox(height: 40),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Zaten bir hesabınız var mı?",
-                        style: GoogleFonts.montserrat(
-                          color: const Color(0xFF0E1116),
-                          fontSize: 14,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const LoginPage()),
-                          );
-                        },
-                        child: Text(
-                          "Oturum Açın",
-                          style: GoogleFonts.montserrat(
-                            color: const Color(0xFF6F2DBD),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  buildLoginText(),
                 ],
               ),
             ),
@@ -104,199 +86,11 @@ class _SignupPageState extends State<SignupPage> {
     );
   }
 
-
-  Widget buildUsernameField(){
-    return TextFormField(
-      controller: usernameController,
-      style: GoogleFonts.montserrat(),
-      decoration: InputDecoration(
-        labelText: "Kullanıcı Adı",
-        labelStyle: GoogleFonts.montserrat(
-          color: const Color(0xFF0E1116).withOpacity(0.6),
-        ),
-        prefixIcon: Icon(
-          Icons.person_outline,
-          color: const Color(0xFF6F2DBD),
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF6F2DBD), width: 2),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
-        ),
-      ),
-    );
-  }
-
-
-   Widget buildEmailField(){
-    return TextFormField(
-      controller: emailController,
-      style: GoogleFonts.montserrat(),
-      decoration: InputDecoration(
-        labelText: "Email",
-        labelStyle: GoogleFonts.montserrat(
-          color: const Color(0xFF0E1116).withOpacity(0.6),
-        ),
-        prefixIcon: Icon(
-          Icons.email,
-          color: const Color(0xFF6F2DBD),
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF6F2DBD), width: 2),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
-        ),
-      ),
-    );
-  }
-
-
-
-
-  Widget buildPasswordField() {
-    return TextFormField(
-      controller: passwordController,
-      style: GoogleFonts.montserrat(),
-      obscureText: obscurePassword,
-      decoration: InputDecoration(
-        labelText: "Şifre",
-        labelStyle: GoogleFonts.montserrat(
-          color: const Color(0xFF0E1116).withOpacity(0.6),
-        ),
-        prefixIcon: Icon(
-          Icons.lock_outline,
-          color: const Color(0xFF6F2DBD),
-        ),
-        suffixIcon: IconButton(
-          icon: Icon(
-            obscurePassword ? Icons.visibility_off : Icons.visibility,
-            color: const Color(0xFF6F2DBD),
-          ),
-          onPressed: () {
-            setState(() {
-              obscurePassword = !obscurePassword;
-            });
-          },
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF6F2DBD), width: 2),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
-        ),
-      ),
-    );
-  }
-
-
-  Widget buildConfirmPasswordField() {
-    return TextFormField(
-      controller: confirmPasswordController,
-      style: GoogleFonts.montserrat(),
-      obscureText: obscurePassword,
-      decoration: InputDecoration(
-        labelText: "Tekrar Şifre",
-        labelStyle: GoogleFonts.montserrat(
-          color: const Color(0xFF0E1116).withOpacity(0.6),
-        ),
-        prefixIcon: Icon(
-          Icons.lock_outline,
-          color: const Color(0xFF6F2DBD),
-        ),
-        suffixIcon: IconButton(
-          icon: Icon(
-            obscurePassword ? Icons.visibility_off : Icons.visibility,
-            color: const Color(0xFF6F2DBD),
-          ),
-          onPressed: () {
-            setState(() {
-              obscurePassword = !obscurePassword;
-            });
-          },
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF6F2DBD), width: 2),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
-        ),
-      ),
-    );
-  }
-
-
-
-  Widget buildSignUpButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: ElevatedButton(
-        onPressed: () {},
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF6F2DBD),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: Text(
-          "Üye Ol",
-          style: GoogleFonts.montserrat(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-
-
-
-  Widget buildHeader() {
+  Widget buildHeader(){
     return Column(
       children: [
         Text(
-          "JoinUp",
+          "Kayıt Ol",
           style: GoogleFonts.montserrat(
             fontSize: 40,
             fontWeight: FontWeight.bold,
@@ -314,7 +108,7 @@ class _SignupPageState extends State<SignupPage> {
         ),
         const SizedBox(height: 16),
         Text(
-          "Aramıza katılın",
+          "Aramıza Katılın",
           style: GoogleFonts.montserrat(
             fontSize: 18,
             fontWeight: FontWeight.w500,
@@ -334,5 +128,120 @@ class _SignupPageState extends State<SignupPage> {
     );
   }
 
+  Widget buildUsernameField() {
+    return TextFormField(
+      controller: usernameController,
+      style: GoogleFonts.montserrat(),
+      decoration: inputDecoration("Kullanıcı Adı", Icons.person_outline),
+    );
+  }
 
+  Widget buildEmailField() {
+    return TextFormField(
+      controller: emailController,
+      style: GoogleFonts.montserrat(),
+      decoration: inputDecoration("Email", Icons.email),
+    );
+  }
+
+  Widget buildPasswordField() {
+    return TextFormField(
+      controller: passwordController,
+      style: GoogleFonts.montserrat(),
+      obscureText: obscurePassword,
+      decoration: inputDecorationWithVisibility(
+        "Şifre",
+        Icons.lock_outline,
+        () {
+          setState(() {
+            obscurePassword = !obscurePassword;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget buildConfirmPasswordField() {
+    return TextFormField(
+      controller: confirmPasswordController,
+      style: GoogleFonts.montserrat(),
+      obscureText: obscurePassword,
+      decoration: inputDecorationWithVisibility(
+        "Tekrar Şifre",
+        Icons.lock_outline,
+        () {
+          setState(() {
+            obscurePassword = !obscurePassword;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget buildSignUpButton() {
+    return ElevatedButton(
+      onPressed: signUp,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF6F2DBD),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 16),
+      ),
+      child: Text(
+        "Kayıt Ol",
+        style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget buildLoginText() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          "Zaten bir hesabınız var mı?",
+          style: GoogleFonts.montserrat(color: const Color(0xFF0E1116), fontSize: 14),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginPage()));
+          },
+          child: Text(
+            "Oturum Açın",
+            style: GoogleFonts.montserrat(color: const Color(0xFF6F2DBD), fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+        ),
+      ],
+    );
+  }
+
+  InputDecoration inputDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: GoogleFonts.montserrat(color: const Color(0xFF0E1116).withOpacity(0.6)),
+      prefixIcon: Icon(icon, color: const Color(0xFF6F2DBD)),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF6F2DBD), width: 2),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+      ),
+    );
+  }
+
+  InputDecoration inputDecorationWithVisibility(String label, IconData icon, VoidCallback onPressed) {
+    return inputDecoration(label, icon).copyWith(
+      suffixIcon: IconButton(
+        icon: Icon(obscurePassword ? Icons.visibility_off : Icons.visibility, color: const Color(0xFF6F2DBD)),
+        onPressed: onPressed,
+      ),
+    );
+  }
 }
