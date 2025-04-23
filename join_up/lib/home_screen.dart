@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-
+import 'package:join_up/signup_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,24 +24,14 @@ class _HomePageState extends State {
     const Color primaryColor = Color(0xFF6F2DBD); // Mor ton
     const Color darkColor = Color(0xFF0E1116); // Koyu renk
 
-
-
     return Scaffold(
-
-
       appBar: AppBar(
-        title: const Text(
-          'Ana Sayfa',
-          style: TextStyle(color: Colors.white), 
-        ),
+        title: const Text('Ana Sayfa', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: primaryColor,
       ),
 
-
-
       body: Column(
-
         children: [
           Container(
             decoration: BoxDecoration(
@@ -49,20 +39,19 @@ class _HomePageState extends State {
               borderRadius: BorderRadius.circular(12),
             ),
 
-
             child: Row(
               children: [
                 // Filtre butonu
                 Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 8.0,
+                    vertical: 4.0,
+                  ),
                   child: IconButton(
-                    onPressed: (){
+                    onPressed: () {
                       print("Filtre butonuna tıklandı!");
                     },
-                    icon: const Icon(
-                      Icons.filter_list,
-                      color: Colors.white,
-                    ),
+                    icon: const Icon(Icons.filter_list, color: Colors.white),
                     style: IconButton.styleFrom(
                       backgroundColor: primaryColor,
                       shape: RoundedRectangleBorder(
@@ -71,9 +60,6 @@ class _HomePageState extends State {
                     ),
                   ),
                 ),
-
-
-
 
                 // Arama çubuğu
                 Expanded(
@@ -86,26 +72,27 @@ class _HomePageState extends State {
                       contentPadding: const EdgeInsets.symmetric(vertical: 15),
                     ),
                     style: const TextStyle(color: Colors.black),
-                    onChanged: (value){
+                    onChanged: (value) {
                       setState(() {}); // Yazı yazıldıkça durumu güncelleyecek
                     },
                   ),
                 ),
 
-
                 // Arama ikonu
                 Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 8.0,
+                    vertical: 4.0,
+                  ),
                   child: IconButton(
-                    onPressed: (){
-                      print('Arama butonuna tıklandı: ${searchController.text}');
+                    onPressed: () {
+                      print(
+                        'Arama butonuna tıklandı: ${searchController.text}',
+                      );
                     },
-                    icon: const Icon(
-                      Icons.search,
-                      color: Colors.white,
-                    ),
+                    icon: const Icon(Icons.search, color: Colors.white),
                     style: IconButton.styleFrom(
-                      backgroundColor: primaryColor, 
+                      backgroundColor: primaryColor,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -115,8 +102,6 @@ class _HomePageState extends State {
               ],
             ),
           ),
-
-
 
           Expanded(
             child: ListView.builder(
@@ -143,17 +128,43 @@ class _HomePageState extends State {
               },
             ),
           ),
-
-
-
         ],
       ),
 
-      
       bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 0, // Seçili öğeyi belirtmek için
+        onTap: (index) {
+          switch (index) {
+            case 0: // Ana Sayfa
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const HomePage()),
+              );
+              break;
+            case 1: // Etkinlik Oluştur
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SignupPage(),
+                ), // Daha sonradan bu yönlendirilen sayfalar değişecek
+              );
+              break;
+            case 2: // Profil
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SignupPage(),
+                ), // Daha sonradan bu yönlendirilen sayfalar değişecek
+              );
+              break;
+          }
+        },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Ana Sayfa'),
-          BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Etkinlik Oluştur'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add),
+            label: 'Etkinlik Oluştur',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
         ],
       ),
