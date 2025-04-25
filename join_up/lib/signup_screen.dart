@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:join_up/services/auth_service.dart';
 import 'package:join_up/login_screen.dart';
 import 'package:join_up/user_settings.dart';
+
+
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
 
