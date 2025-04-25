@@ -106,39 +106,3 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     super.dispose();
   }
 }
-
-
-/*
-import 'package:join_up/signup_screen.dart';
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Hesabınız yok mu?",
-                        style: GoogleFonts.montserrat(
-                          color: const Color(0xFF0E1116),
-                          fontSize: 14,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SignupPage(),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          "Kaydolun",
-                          style: GoogleFonts.montserrat(
-                            color: const Color(0xFF6F2DBD),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-
-*/
