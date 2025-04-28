@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:join_up/signup_screen.dart';
+import 'package:join_up/createEvent_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -145,7 +146,7 @@ class _HomePageState extends State {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const SignupPage(),
+                  builder: (context) => const CreateEventPage(),
                 ), // Daha sonradan bu yönlendirilen sayfalar değişecek
               );
               break;
