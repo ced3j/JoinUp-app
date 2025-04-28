@@ -146,7 +146,7 @@ class _HomePageState extends State {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const CreateEventPage(),
+                  builder: (context) => const CreateEventPage(userId: "current_user_id"),
                 ), // Daha sonradan bu yönlendirilen sayfalar değişecek
               );
               break;
