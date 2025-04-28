@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart'; // Tarih formatlama için
 
-// Event model
+// Etkinlik modeli - Verileri tutacak sınıf
 class Event {
-  final String title;
-  final String location;
-  final String description;
-  final String gender;
-  final DateTime duration;
-  final String creatorId;
+  final String title;         // Etkinlik başlığı
+  final String location;      // Etkinlik yeri
+  final String description;   // Açıklama
+  final String gender;        // Katılımcı cinsiyeti (Herkes/Erkek/Kadın)
+  final DateTime duration;    // Etkinlik bitiş tarihi
+  final String creatorId;     // Etkinliği oluşturan kullanıcı ID'si
 
   Event({
     required this.title,
@@ -20,30 +20,30 @@ class Event {
   });
 }
 
-// Event service interface
+// Etkinlik servis arayüzü - Soyut sınıf
 abstract class EventServiceInterface {
-  Future<bool> createEvent(Event event);
+  Future<bool> createEvent(Event event); // Etkinlik oluşturma metodu
 }
 
-// Event service implementation
+// Etkinlik servis implementasyonu - Somut sınıf
 class EventService implements EventServiceInterface {
   @override
   Future<bool> createEvent(Event event) async {
     try {
-      // Simulate API call
+      // API çağrısı simülasyonu (1 saniye bekletiyoruz)
       await Future.delayed(const Duration(seconds: 1));
-      debugPrint('Event created: ${event.title}');
-      return true;
+      debugPrint('Event created: ${event.title}'); // Konsola log yazdırma
+      return true; // Başarılı durum
     } catch (e) {
-      debugPrint('Error creating event: $e');
-      return false;
+      debugPrint('Error creating event: $e'); // Hata durumunda log
+      return false; // Başarısız durum
     }
   }
 }
 
-// Create Event Page
+// Etkinlik Oluşturma Sayfası Widget'ı
 class CreateEventPage extends StatefulWidget {
-  final String userId;
+  final String userId; // Kullanıcı ID'si (dışarıdan alınacak)
 
   const CreateEventPage({
     super.key,
@@ -54,18 +54,34 @@ class CreateEventPage extends StatefulWidget {
   State<CreateEventPage> createState() => _CreateEventPageState();
 }
 
+// Etkinlik Oluşturma Sayfası State Sınıfı
 class _CreateEventPageState extends State<CreateEventPage> {
+  // Form kontrolü için global key
   final _formKey = GlobalKey<FormState>();
+  
+  // Text field controller'ları
   final _titleController = TextEditingController();
   final _locationController = TextEditingController();
   final _descriptionController = TextEditingController();
+  
+  // Dropdown seçimi için değişken
   String _selectedGender = 'Herkes';
+  
+  // Tarih seçimi için değişken
   DateTime? _selectedDate;
+  
+  // Yükleme durumu
   bool _isLoading = false;
+  
+  // Servis örneği
   final EventService _eventService = EventService();
 
+  // Etkinlik oluşturma fonksiyonu
   Future<void> _createEvent() async {
+    // Form validasyonu
     if (!_formKey.currentState!.validate()) return;
+    
+    // Tarih seçilmiş mi kontrolü
     if (_selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lütfen bir tarih seçin')),
@@ -73,9 +89,10 @@ class _CreateEventPageState extends State<CreateEventPage> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() => _isLoading = true); // Yükleme başladı
 
     try {
+      // Yeni etkinlik nesnesi oluştur
       final event = Event(
         title: _titleController.text,
         location: _locationController.text,
@@ -85,48 +102,55 @@ class _CreateEventPageState extends State<CreateEventPage> {
         creatorId: widget.userId,
       );
 
+      // Servis üzerinden etkinlik oluştur
       final success = await _eventService.createEvent(event);
 
       if (success) {
-        _resetForm();
+        _resetForm(); // Formu temizle
+        // Başarı mesajı göster
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('"${event.title}" etkinliği oluşturuldu')),
         );
       } else {
+        // Hata mesajı göster
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Etkinlik oluşturulamadı')),
         );
       }
     } catch (e) {
+      // Beklenmeyen hata durumu
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Hata: ${e.toString()}')),
       );
     } finally {
-      setState(() => _isLoading = false);
+      setState(() => _isLoading = false); // Yükleme bitti
     }
   }
 
+  // Formu sıfırlama fonksiyonu
   void _resetForm() {
-    _formKey.currentState?.reset();
+    _formKey.currentState?.reset(); // Form state'ini resetle
     setState(() {
-      _selectedGender = 'Herkes';
-      _selectedDate = null;
+      _selectedGender = 'Herkes'; // Varsayılan cinsiyet
+      _selectedDate = null; // Tarihi temizle
     });
   }
 
+  // Tarih seçme fonksiyonu
   Future<void> _selectDate(BuildContext context) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: DateTime.now(), // Bugünün tarihi ile başla
+      firstDate: DateTime.now(), // Seçilebilir en eski tarih
+      lastDate: DateTime.now().add(const Duration(days: 365)), // 1 yıl sonrasına kadar
     );
     
     if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
+      setState(() => _selectedDate = picked); // Seçilen tarihi kaydet
     }
   }
 
+  // Widget dispose edilirken controller'ları temizle
   @override
   void dispose() {
     _titleController.dispose();
@@ -135,10 +159,11 @@ class _CreateEventPageState extends State<CreateEventPage> {
     super.dispose();
   }
 
+  // UI oluşturma
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF6F2DBD);
-    const darkColor = Color(0xFF0E1116);
+    const primaryColor = Color(0xFF6F2DBD); // Ana renk
+    const darkColor = Color(0xFF0E1116); // Koyu renk
 
     return Scaffold(
       appBar: AppBar(
@@ -152,11 +177,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
-          key: _formKey,
+          key: _formKey, // Form key'i bağla
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 20),
+              
+              // Başlık
               const Text(
                 'Etkinlik Bilgilerini Girin',
                 style: TextStyle(
@@ -166,11 +193,15 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 ),
               ),
               const SizedBox(height: 8),
+              
+              // Açıklama metni
               const Text(
                 'Etkinliğinizin detaylarını aşağıda belirtin.',
                 style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
               const SizedBox(height: 24),
+              
+              // Etkinlik başlığı input
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
@@ -181,6 +212,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 validator: (value) => value!.isEmpty ? 'Bu alan zorunludur' : null,
               ),
               const SizedBox(height: 16),
+              
+              // Konum input
               TextFormField(
                 controller: _locationController,
                 decoration: const InputDecoration(
@@ -191,6 +224,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 validator: (value) => value!.isEmpty ? 'Bu alan zorunludur' : null,
               ),
               const SizedBox(height: 16),
+              
+              // Açıklama input
               TextFormField(
                 controller: _descriptionController,
                 decoration: const InputDecoration(
@@ -202,6 +237,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 validator: (value) => value!.isEmpty ? 'Bu alan zorunludur' : null,
               ),
               const SizedBox(height: 16),
+              
+              // Cinsiyet seçim dropdown
               DropdownButtonFormField<String>(
                 value: _selectedGender,
                 decoration: const InputDecoration(
@@ -218,6 +255,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 onChanged: (value) => setState(() => _selectedGender = value!),
               ),
               const SizedBox(height: 16),
+              
+              // Tarih seçim alanı
               InkWell(
                 onTap: () => _selectDate(context),
                 child: InputDecorator(
@@ -234,6 +273,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 ),
               ),
               const SizedBox(height: 24),
+              
+              // Gönder butonu
               ElevatedButton(
                 onPressed: _isLoading ? null : _createEvent,
                 style: ElevatedButton.styleFrom(
