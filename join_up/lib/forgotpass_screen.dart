@@ -42,7 +42,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
         child: Column(
           children: [
-            Image.asset("palm-recognition.png",),
+            Image.asset(
+              "palm-recognition.png",
+              width: 250,
+              height: 250,
+              ),
             Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.stretch,

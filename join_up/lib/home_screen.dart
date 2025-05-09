@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:join_up/favori_event_screen.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:join_up/signup_screen.dart';
+import 'package:join_up/createEvent_screen.dart';
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
+  
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -17,7 +21,17 @@ class _HomePageState extends State {
     searchController.dispose();
     super.dispose();
   }
+final Set<int> favoriEtkinlikler = {};
 
+ void toggleFavori(int index) {
+    setState(() {
+      if (favoriEtkinlikler.contains(index)) {
+        favoriEtkinlikler.remove(index);
+      } else {
+        favoriEtkinlikler.add(index);
+      }
+    });
+  }
   @override
   Widget build(BuildContext context) {
     // Renkler
@@ -29,6 +43,24 @@ class _HomePageState extends State {
         title: const Text('Ana Sayfa', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: primaryColor,
+        actions: [
+        IconButton(
+        icon: const Icon(Icons.star),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => FavorilerSayfasi(
+                favoriler: favoriEtkinlikler,
+                toggleFavori: toggleFavori,
+        ),
+      ),
+    ).then((_) {
+      setState(() {}); // Geri dönünce liste güncellensin
+    });
+  },
+),
+        ],
       ),
 
       body: Column(
@@ -107,6 +139,7 @@ class _HomePageState extends State {
             child: ListView.builder(
               itemCount: 10,
               itemBuilder: (context, index) {
+                final bool favorideMi = favoriEtkinlikler.contains(index);
                 return Card(
                   margin: const EdgeInsets.all(8.0),
                   child: ListTile(
@@ -119,7 +152,24 @@ class _HomePageState extends State {
                         Text('Konum: Şehir $index'),
                       ],
                     ),
-                    trailing: const Icon(LucideIcons.chevronRight),
+                    trailing: IconButton(
+                      icon: Icon(
+                        favorideMi ? LucideIcons.star : LucideIcons.starOff,
+                        color: favorideMi ? Colors.amber : Colors.grey,                      
+                     ),
+                     onPressed: (){
+
+                      setState(() {
+                        if(favorideMi){
+
+                          favoriEtkinlikler.remove(index);
+                        }
+                        else{
+                          favoriEtkinlikler.add(index);
+                        }
+                      });
+                     }
+                  ),
                     onTap: () {
                       // Etkinlik detaylarına git
                     },
@@ -145,7 +195,7 @@ class _HomePageState extends State {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const SignupPage(),
+                  builder: (context) => const CreateEventPage(userId: "current_user_id"),
                 ), // Daha sonradan bu yönlendirilen sayfalar değişecek
               );
               break;
