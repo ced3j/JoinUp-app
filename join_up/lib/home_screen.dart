@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:join_up/favori_event_screen.dart';
+import 'package:join_up/favorite_event_screen.dart';
+import 'package:join_up/profile_screen.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:join_up/signup_screen.dart';
 import 'package:join_up/createEvent_screen.dart';
-
+import 'package:join_up/notifications_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -21,17 +21,95 @@ class _HomePageState extends State {
     searchController.dispose();
     super.dispose();
   }
-final Set<int> favoriEtkinlikler = {};
+final Set<int> favoriEvents = {};
 
  void toggleFavori(int index) {
     setState(() {
-      if (favoriEtkinlikler.contains(index)) {
-        favoriEtkinlikler.remove(index);
+      if (favoriEvents.contains(index)) {
+        favoriEvents.remove(index);
       } else {
-        favoriEtkinlikler.add(index);
+        favoriEvents.add(index);
       }
     });
   }
+
+
+
+
+
+void showJoinRequestSheet(BuildContext context, String eventTitle) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      return Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Container(
+          padding: EdgeInsets.all(16),
+          height: MediaQuery.of(context).size.height * 0.65, // %60 ekran yüksekliği
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 50,
+                  height: 5,
+                  margin: EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[400],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              Text(
+                "Etkinlik: $eventTitle",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 10),
+              Text(
+                "Açıklama burada yer alacak.\nKatılım için isteğini onaylaması gerekiyor.",
+              ),
+              Spacer(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    child: Text("İptal"),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF6F2DBD),
+                      foregroundColor: Colors.white,  
+
+                    ),
+                    child: Text("İstek Gönder"),
+                    onPressed: () {
+                      // İstek gönderme işlemi buraya
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("İstek gönderildi")),
+                      );
+                    },
+                  ),
+                ],
+              )
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+
+
+
   @override
   Widget build(BuildContext context) {
     // Renkler
@@ -50,8 +128,8 @@ final Set<int> favoriEtkinlikler = {};
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => FavorilerSayfasi(
-                favoriler: favoriEtkinlikler,
+              builder: (context) => FavoritesPage(
+                favorites : favoriEvents,
                 toggleFavori: toggleFavori,
         ),
       ),
@@ -60,8 +138,23 @@ final Set<int> favoriEtkinlikler = {};
     });
   },
 ),
+      IconButton(
+        icon: const Icon(Icons.notifications),
+        onPressed: (){
+          //Bildirimler Sayfasına git
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context)=> const NotificationsPage(),
+            ),
+          );
+        },
+
+      ),
         ],
       ),
+
+
 
       body: Column(
         children: [
@@ -139,7 +232,7 @@ final Set<int> favoriEtkinlikler = {};
             child: ListView.builder(
               itemCount: 10,
               itemBuilder: (context, index) {
-                final bool favorideMi = favoriEtkinlikler.contains(index);
+                final bool favorideMi = favoriEvents.contains(index);
                 return Card(
                   margin: const EdgeInsets.all(8.0),
                   child: ListTile(
@@ -162,16 +255,16 @@ final Set<int> favoriEtkinlikler = {};
                       setState(() {
                         if(favorideMi){
 
-                          favoriEtkinlikler.remove(index);
+                          favoriEvents.remove(index);
                         }
                         else{
-                          favoriEtkinlikler.add(index);
+                          favoriEvents.add(index);
                         }
                       });
                      }
                   ),
                     onTap: () {
-                      // Etkinlik detaylarına git
+                        showJoinRequestSheet(context, "Etkinlik Başlığı"); // Etkinlik detaylarına git
                     },
                   ),
                 );
@@ -200,10 +293,10 @@ final Set<int> favoriEtkinlikler = {};
               );
               break;
             case 2: // Profil
-              Navigator.pushReplacement(
+              Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const SignupPage(),
+                  builder: (context) => const ProfilePage(),
                 ), // Daha sonradan bu yönlendirilen sayfalar değişecek
               );
               break;

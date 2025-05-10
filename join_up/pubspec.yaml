@@ -12,12 +12,15 @@ dependencies:
   intl: ^0.18.1
   google_fonts: ^6.1.0
   lucide_icons: ^0.257.0
-  code_uml: ^1.0.2
+intl: ^0.18.0
 
-  # Firebase paketleri (birbiriyle uyumlu)
-  firebase_core: ^2.32.0
-  firebase_auth: ^4.16.0
-  cloud_firestore: ^4.15.7
+# Firebase paketleri (birbiriyle uyumlu)
+firebase_core: ^2.32.0
+firebase_auth: ^4.16.0
+cloud_firestore: ^4.15.7
+
+code_uml: ^1.0.2
+
 
 dev_dependencies:
   flutter_test:
