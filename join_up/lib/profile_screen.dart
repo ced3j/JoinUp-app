@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:join_up/my_events_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+
+
+final String uid = FirebaseAuth.instance.currentUser!.uid;
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -45,12 +51,18 @@ class ProfilePage extends StatelessWidget {
                     leading: const Icon(Icons.favorite),
                     title: const Text("Etkinliklerim"),
                     onTap: () {
-                      // Ayarlar sayfası
+                        Navigator.push(
+                          context,
+                          
+                          MaterialPageRoute(
+                             builder: (context) => MyEventsPage(userId: FirebaseAuth.instance.currentUser!.uid),
+                            ),
+                          );
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.room_service_sharp),
-                    title: const Text("İsteklerim"),
+                    title: const Text("İstekler"),
                     onTap: () {
                       // Yardım sayfası
                     },

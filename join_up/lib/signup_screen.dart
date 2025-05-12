@@ -4,7 +4,6 @@ import 'package:join_up/services/auth_service.dart';
 import 'package:join_up/login_screen.dart';
 import 'package:join_up/user_settings.dart';
 
-
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
 
@@ -31,11 +30,10 @@ class _SignupPageState extends State<SignupPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Şifreler uyuşmuyor!")),
       );
-    
       return;
     }
-    
 
+    // Kayıt işlemi
     var user = await authService.signUpWithEmailPassWord(email, password);
 
     if (user != null) {
@@ -88,7 +86,7 @@ class _SignupPageState extends State<SignupPage> {
     );
   }
 
-  Widget buildHeader(){
+  Widget buildHeader() {
     return Column(
       children: [
         Text(

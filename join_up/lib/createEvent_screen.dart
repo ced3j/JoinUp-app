@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:join_up/home_screen.dart'; // Tarih formatlama için
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 
 
 
@@ -32,7 +34,7 @@ abstract class EventServiceInterface {
 // Etkinlik servis implementasyonu - Somut sınıf
 class EventService implements EventServiceInterface {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
+  DateTime now = DateTime.now();
   @override
   Future<bool> createEvent(Event event) async {
     try {
@@ -41,9 +43,10 @@ class EventService implements EventServiceInterface {
         'location': event.location,
         'description': event.description,
         'gender': event.gender,
-        'duration': event.duration.toIso8601String(),
-        'creatorId': event.creatorId,
+        'duration': now.toIso8601String(),
+        'creatorId': FirebaseAuth.instance.currentUser!.uid,
         'createdAt': FieldValue.serverTimestamp(), // zaman etiketi
+        
       });
 
       return true;

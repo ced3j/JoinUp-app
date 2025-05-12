@@ -4,40 +4,49 @@ class AuthService {
   final FirebaseAuth auth = FirebaseAuth.instance;
 
   // Kullanıcı kayıt olma
-  Future<User?> signUpWithEmailPassWord(String email, String password) async{
-    try{
+  Future<User?> signUpWithEmailPassWord(String email, String password) async {
+    try {
+      // Firebase ile kullanıcı oluşturma
       UserCredential userCredential = await auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
       
-      return userCredential.user;
-    } catch(e){
+      // Başarıyla kayıt olduktan sonra kullanıcıyı döndür
+      User? user = userCredential.user;
+      if (user != null) {
+        print("Kayıt başarılı, UID: ${user.uid}");
+      }
+      return user;
+    } catch (e) {
       print("Kayıt olma hatası: $e");
       return null;
     }
   }
 
-
   // Kullanıcı giriş yapma
-
-  Future<User?> signInWithEmailPassword(String email, String password) async{
-    try{
+  Future<User?> signInWithEmailPassword(String email, String password) async {
+    try {
+      // Firebase ile giriş yapma
       UserCredential userCredential = await auth.signInWithEmailAndPassword(
         email: email,
-        password: password
-        );
-        return userCredential.user;
-    } catch(e){
-      print("Giriş yapma hatası $e");
+        password: password,
+      );
+
+      // Giriş başarılı ise kullanıcıyı döndür
+      User? user = userCredential.user;
+      if (user != null) {
+        print("Giriş başarılı, UID: ${user.uid}");
+      }
+      return user;
+    } catch (e) {
+      print("Giriş yapma hatası: $e");
       return null;
     }
   }
 
-
-
   // Çıkış yapma
-  Future<void> signOut() async{
+  Future<void> signOut() async {
     await auth.signOut();
     print("Kullanıcı çıkış yaptı.");
   }
