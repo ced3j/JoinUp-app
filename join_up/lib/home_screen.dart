@@ -1,20 +1,33 @@
 import 'package:flutter/material.dart';
+
 import 'package:join_up/favorite_event_screen.dart';
 import 'package:join_up/profile_screen.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:join_up/createEvent_screen.dart';
 import 'package:join_up/notifications_screen.dart';
 
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
-  
 
   @override
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State {
+class _HomePageState extends State<HomePage> {
   TextEditingController searchController = TextEditingController();
+  final Set<String> favoriEvents = {}; // Favori etkinliklerin ID'lerini tutuyoruz
+
+  // Favori ekleme/çıkarma fonksiyonu
+  void toggleFavori(String eventId) {
+    setState(() {
+      if (favoriEvents.contains(eventId)) {
+        favoriEvents.remove(eventId); // Etkinlik favorilerden çıkar
+      } else {
+        favoriEvents.add(eventId);    // Etkinlik favorilere eklenir
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -109,10 +122,8 @@ void showJoinRequestSheet(BuildContext context, String eventTitle) {
 
 
 
-
   @override
   Widget build(BuildContext context) {
-    // Renkler
     const Color primaryColor = Color(0xFF6F2DBD); // Mor ton
     const Color darkColor = Color(0xFF0E1116); // Koyu renk
 
@@ -122,6 +133,7 @@ void showJoinRequestSheet(BuildContext context, String eventTitle) {
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: primaryColor,
         actions: [
+
         IconButton(
         icon: const Icon(Icons.star),
         onPressed: () {
@@ -163,7 +175,6 @@ void showJoinRequestSheet(BuildContext context, String eventTitle) {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
-
             child: Row(
               children: [
                 // Filtre butonu
@@ -198,7 +209,7 @@ void showJoinRequestSheet(BuildContext context, String eventTitle) {
                     ),
                     style: const TextStyle(color: Colors.black),
                     onChanged: (value) {
-                      setState(() {}); // Yazı yazıldıkça durumu güncelleyecek
+                      setState(() {});
                     },
                   ),
                 ),
@@ -289,7 +300,7 @@ void showJoinRequestSheet(BuildContext context, String eventTitle) {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const CreateEventPage(userId: "current_user_id"),
-                ), // Daha sonradan bu yönlendirilen sayfalar değişecek
+                ),
               );
               break;
             case 2: // Profil
@@ -298,6 +309,7 @@ void showJoinRequestSheet(BuildContext context, String eventTitle) {
                 MaterialPageRoute(
                   builder: (context) => const ProfilePage(),
                 ), // Daha sonradan bu yönlendirilen sayfalar değişecek
+
               );
               break;
           }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 class FavoritesPage  extends StatefulWidget {
   final Set<int> favorites ;
   final Function(int) toggleFavori;
@@ -8,6 +7,7 @@ class FavoritesPage  extends StatefulWidget {
   const FavoritesPage({
     super.key,
     required this.favorites ,
+
     required this.toggleFavori,
   });
 
@@ -28,6 +28,7 @@ class _FavorilerSayfasiState extends State<FavoritesPage> {
         ),
       body: ListView(
         children: widget.favorites .map((index) {
+
           return Card(
             child: ListTile(
               leading: Icon(
@@ -41,6 +42,7 @@ class _FavorilerSayfasiState extends State<FavoritesPage> {
                 onPressed: () {
                   widget.toggleFavori(index); // ana sayfadaki favoriler güncelleniyor
                   setState(() {}); // bu sayfa da güncellensin
+
                 },
               ),
             ),

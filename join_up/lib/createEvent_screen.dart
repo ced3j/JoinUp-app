@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import 'package:intl/intl.dart'; // Tarih formatlama için
 import 'package:join_up/home_screen.dart';
+
 // Etkinlik modeli - Verileri tutacak sınıf
 class Event {
   final String title;         // Etkinlik başlığı
@@ -27,16 +29,25 @@ abstract class EventServiceInterface {
 
 // Etkinlik servis implementasyonu - Somut sınıf
 class EventService implements EventServiceInterface {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   @override
   Future<bool> createEvent(Event event) async {
     try {
-      // API çağrısı simülasyonu (1 saniye bekletiyoruz)
-      await Future.delayed(const Duration(seconds: 1));
-      debugPrint('Event created: ${event.title}'); // Konsola log yazdırma
-      return true; // Başarılı durum
+      await _firestore.collection('events').add({
+        'title': event.title,
+        'location': event.location,
+        'description': event.description,
+        'gender': event.gender,
+        'duration': event.duration.toIso8601String(),
+        'creatorId': event.creatorId,
+        'createdAt': FieldValue.serverTimestamp(), // zaman etiketi
+      });
+
+      return true;
     } catch (e) {
-      debugPrint('Error creating event: $e'); // Hata durumunda log
-      return false; // Başarısız durum
+      debugPrint('Firebase Error: $e');
+      return false;
     }
   }
 }
