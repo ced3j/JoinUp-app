@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 
+class FavoritesPage extends StatefulWidget {
+  final Set<String> favorites;  // favori etkinliklerin id'lerini tutuyoruz
+  final Function(String) toggleFavori;  // eventId parametresini alacak
 
-class FavorilerSayfasi extends StatefulWidget {
-  final Set<int> favoriler;
-  final Function(int) toggleFavori;
-
-  const FavorilerSayfasi({
+  const FavoritesPage({
     super.key,
-    required this.favoriler,
+    required this.favorites,
     required this.toggleFavori,
   });
 
@@ -15,7 +14,7 @@ class FavorilerSayfasi extends StatefulWidget {
   _FavorilerSayfasiState createState() => _FavorilerSayfasiState();
 }
 
-class _FavorilerSayfasiState extends State<FavorilerSayfasi> {
+class _FavorilerSayfasiState extends State<FavoritesPage> {
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF6F2DBD); // Mor ton
@@ -25,22 +24,22 @@ class _FavorilerSayfasiState extends State<FavorilerSayfasi> {
         title: const Text('Favori Etkinlikler', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: primaryColor,
-        ),
+      ),
       body: ListView(
-        children: widget.favoriler.map((index) {
+        children: widget.favorites.map((eventId) {
           return Card(
             child: ListTile(
               leading: Icon(
                 Icons.star,
                 color: Colors.amber,
               ),
-              title: Text("Etkinlik Başlığı $index"),
-              subtitle: Text("Açıklama $index"),
+              title: Text("Etkinlik Başlığı $eventId"),
+              subtitle: Text("Açıklama $eventId"),
               trailing: IconButton(
                 icon: const Icon(Icons.remove_circle, color: Colors.red),
                 onPressed: () {
-                  widget.toggleFavori(index); // ana sayfadaki favoriler güncelleniyor
-                  setState(() {}); // bu sayfa da güncellensin
+                  widget.toggleFavori(eventId);  // Favoriden çıkar
+                  setState(() {});
                 },
               ),
             ),

@@ -7,7 +7,6 @@ void main() async {
   // Firebase için eklendi (async)
 
   WidgetsFlutterBinding.ensureInitialized(); // Firebase için eklendi
-
   await Firebase.initializeApp(
     // Firebase için eklendi
     options: DefaultFirebaseOptions.currentPlatform,
