@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:join_up/home_screen.dart'; // Tarih formatlama için
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-
+import 'package:intl/intl.dart'; // Tarih formatlama için
+import 'package:join_up/home_screen.dart';
 
 // Etkinlik modeli - Verileri tutacak sınıf
 class Event {
@@ -186,7 +184,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         ),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
-        leading: IconButton(
+         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: (){
             Navigator.pushReplacement(
