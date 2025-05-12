@@ -15,9 +15,10 @@ dependencies:
   code_uml: ^1.0.2
 
   # Firebase paketleri (birbiriyle uyumlu)
-  firebase_core: ^2.32.0
-  firebase_auth: ^4.16.0
-  cloud_firestore: ^4.15.7
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: 5.6.7
+  js: ^0.7.1
 
 dev_dependencies:
   flutter_test:
