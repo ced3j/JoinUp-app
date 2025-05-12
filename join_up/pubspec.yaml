@@ -9,15 +9,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  intl: ^0.18.1
   google_fonts: ^6.1.0
   lucide_icons: ^0.257.0
   code_uml: ^1.0.2
 
-  # Firebase paketleri (birbiriyle uyumlu)
-  firebase_core: ^3.6.0
-  firebase_auth: ^5.3.1
-  cloud_firestore: 5.6.7
+
+  cloud_firestore: ^5.6.7
+  intl: ^0.18.0
+  firebase_auth: ^5.5.1
+  firebase_core: ^3.12.1
   js: ^0.7.1
 
 dev_dependencies:
