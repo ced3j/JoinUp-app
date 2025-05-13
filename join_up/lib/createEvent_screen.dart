@@ -60,7 +60,7 @@ class EventService implements EventServiceInterface {
 // Etkinlik Oluşturma Sayfası Widget'ı
 class CreateEventPage extends StatefulWidget {
   final String userId; // Kullanıcı ID'si (dışarıdan alınacak)
-
+  
   const CreateEventPage({
     super.key,
     required this.userId,
@@ -116,6 +116,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         gender: _selectedGender,
         duration: _selectedDate!,
         creatorId: widget.userId,
+        
       );
 
       // Servis üzerinden etkinlik oluştur

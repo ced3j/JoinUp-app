@@ -5,7 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:join_up/favorite_event_screen.dart';
 import 'package:join_up/createEvent_screen.dart'; // Etkinlik oluşturma sayfasının importu
 import 'package:join_up/profile_screen.dart'; // Profil sayfasının importu
-
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -35,7 +35,14 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  void showJoinRequestSheet(BuildContext context, String eventTitle) {
+void showJoinRequestSheet(
+    BuildContext context,
+    String eventId,
+    String eventTitle,
+    String creatorId,
+  ) {
+    final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -49,7 +56,9 @@ class _HomePageState extends State<HomePage> {
           ),
           child: Container(
             padding: EdgeInsets.all(16),
-            height: MediaQuery.of(context).size.height * 0.65, // %60 ekran yüksekliği
+            height:
+                MediaQuery.of(context).size.height *
+                0.65, // %60 ekran yüksekliği
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -69,9 +78,7 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 10),
-                Text(
-                  "Açıklama burada yer alacak.\nKatılım için isteğini onaylaması gerekiyor.",
-                ),
+                Text("Katılım için isteğini onaylaması gerekiyor."),
                 Spacer(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -86,15 +93,46 @@ class _HomePageState extends State<HomePage> {
                         foregroundColor: Colors.white,
                       ),
                       child: Text("İstek Gönder"),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("İstek gönderildi")),
-                        );
-                      },
+                      onPressed:
+                          currentUserId == creatorId
+                              ? null
+                              : () async {
+                                // İstek gönderildiğinde, Firestore'a kaydediyoruz
+                                await FirebaseFirestore.instance
+                                    .collection('events')
+                                    .doc(eventId)
+                                    .collection('joinRequests')
+                                    .add({
+                                      'userId': currentUserId,
+                                      'status':
+                                          'pending', // Başlangıçta istek durumu 'pending'
+                                      'createdAt': FieldValue.serverTimestamp(),
+                                    });
+
+                                // 2. Etkinliği oluşturan kişiye bildirim ekliyoruz
+                                await FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(creatorId)
+                                    .collection('notifications')
+                                    .add({
+                                      'type': 'join_request',
+                                      'message':
+                                          '$currentUserId etkinliğinize katılmak için istek gönderdi.',
+                                      'eventId': eventId,
+                                      'createdAt': FieldValue.serverTimestamp(),
+                                    });
+
+                                // Popup'ı kapatıyoruz
+                                Navigator.pop(context);
+
+                                // Kullanıcıya SnackBar gösteriyoruz
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("İstek gönderildi")),
+                                );
+                              },
                     ),
                   ],
-                )
+                ),
               ],
             ),
           ),
@@ -102,6 +140,9 @@ class _HomePageState extends State<HomePage> {
       },
     );
   }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -230,13 +271,15 @@ class _HomePageState extends State<HomePage> {
                   itemBuilder: (context, index) {
                     var event = events[index];
                     var eventId = event.id;  // Etkinliğin benzersiz ID'sini alıyoruz
+										final eventTitle = event['title']; // Etkinlik Başlığı
+										final creatorId = event['creatorId'];										
                     var favorideMi = favoriEvents.contains(eventId);
 
                     return Card(
                       margin: const EdgeInsets.all(8.0),
                       child: ListTile(
                         leading: const Icon(LucideIcons.calendar),
-                        title: Text(event['title']),
+                        title: Text(eventTitle),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -254,7 +297,7 @@ class _HomePageState extends State<HomePage> {
                           },
                         ),
                         onTap: () {
-                          showJoinRequestSheet(context, event['title']);
+                          showJoinRequestSheet(context, eventId, eventTitle, creatorId);
                         },
                       ),
                     );
