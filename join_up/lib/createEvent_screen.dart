@@ -13,6 +13,7 @@ class Event {
   final String gender;        // Katılımcı cinsiyeti (Herkes/Erkek/Kadın)
   final DateTime duration;    // Etkinlik bitiş tarihi
   final String creatorId;     // Etkinliği oluşturan kullanıcı ID'si
+  final int maxParticipants; // Katılımcı sayısı
 
   Event({
     required this.title,
@@ -21,6 +22,7 @@ class Event {
     required this.gender,
     required this.duration,
     required this.creatorId,
+    required this.maxParticipants,
   });
 }
 
@@ -43,6 +45,7 @@ class EventService implements EventServiceInterface {
         'gender': event.gender,
         'duration': event.duration.toIso8601String(),
         'creatorId': event.creatorId,
+        'maxParticipants' : event.maxParticipants,
         'createdAt': FieldValue.serverTimestamp(), // zaman etiketi
       });
 
@@ -76,6 +79,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
   final _titleController = TextEditingController();
   final _locationController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _maxParticipantsController = TextEditingController(); // Katılımcı sayısı için controller
+
   
   // Dropdown seçimi için değişken
   String _selectedGender = 'Herkes';
@@ -113,6 +118,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         gender: _selectedGender,
         duration: _selectedDate!,
         creatorId: widget.userId,
+        maxParticipants: int.parse(_maxParticipantsController.text), // Katılımcı sayısını al 
       );
 
       // Servis üzerinden etkinlik oluştur
@@ -139,13 +145,16 @@ class _CreateEventPageState extends State<CreateEventPage> {
       setState(() => _isLoading = false); // Yükleme bitti
     }
   }
-
-  // Formu sıfırlama fonksiyonu
+  // Formu sıfırlama fonksiyonu 
   void _resetForm() {
-    _formKey.currentState?.reset(); // Form state'ini resetle
+    _formKey.currentState?.reset();
+    _titleController.clear(); // Controller'ı temizle
+    _locationController.clear();
+    _descriptionController.clear();
+    _maxParticipantsController.clear(); // Yeni controller'ı temizle
     setState(() {
-      _selectedGender = 'Herkes'; // Varsayılan cinsiyet
-      _selectedDate = null; // Tarihi temizle
+      _selectedGender = 'Herkes';
+      _selectedDate = null;
     });
   }
 
@@ -169,6 +178,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
     _titleController.dispose();
     _locationController.dispose();
     _descriptionController.dispose();
+    _maxParticipantsController.dispose();
     super.dispose();
   }
 
@@ -277,6 +287,28 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 onChanged: (value) => setState(() => _selectedGender = value!),
               ),
               const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _maxParticipantsController,
+                decoration: const InputDecoration(
+                  labelText: 'Maksimum Katılımcı Sayısı',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.group),
+                ),
+                keyboardType: TextInputType.number, // Sayısal klavye
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Bu alan zorunludur';
+                  }
+                  if (int.tryParse(value) == null || int.parse(value) <= 0) {
+                    return 'Geçerli bir sayı girin';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+
               
               // Tarih seçim alanı
               InkWell(
