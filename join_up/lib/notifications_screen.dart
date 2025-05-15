@@ -18,4 +18,6 @@ class NotificationsPage extends StatelessWidget {
       ),
     );
   }
+
 }
+
