@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-
-import 'package:join_up/favorite_event_screen.dart';
-import 'package:join_up/profile_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:join_up/Notifications_screen.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:join_up/createEvent_screen.dart';
-import 'package:join_up/notifications_screen.dart';
-
+import 'package:join_up/favorite_event_screen.dart';
+import 'package:join_up/createEvent_screen.dart'; // Etkinlik oluşturma sayfasının importu
+import 'package:join_up/profile_screen.dart'; // Profil sayfasının importu
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -36,89 +36,114 @@ class _HomePageState extends State<HomePage> {
   }
 final Set<int> favoriEvents = {};
 
- void toggleFavori(int index) {
-    setState(() {
-      if (favoriEvents.contains(index)) {
-        favoriEvents.remove(index);
-      } else {
-        favoriEvents.add(index);
-      }
-    });
-  }
+void showJoinRequestSheet(
+    BuildContext context,
+    String eventId,
+    String eventTitle,
+    String creatorId,
+  ) {
+    final currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
-
-
-
-
-void showJoinRequestSheet(BuildContext context, String eventTitle) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (context) {
-      return Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Container(
-          padding: EdgeInsets.all(16),
-          height: MediaQuery.of(context).size.height * 0.65, // %60 ekran yüksekliği
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 50,
-                  height: 5,
-                  margin: EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[400],
-                    borderRadius: BorderRadius.circular(10),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Container(
+            padding: EdgeInsets.all(16),
+            height:
+                MediaQuery.of(context).size.height *
+                0.65, // %60 ekran yüksekliği
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 50,
+                    height: 5,
+                    margin: EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
-              ),
-              Text(
-                "Etkinlik: $eventTitle",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 10),
-              Text(
-                "Açıklama burada yer alacak.\nKatılım için isteğini onaylaması gerekiyor.",
-              ),
-              Spacer(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    child: Text("İptal"),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF6F2DBD),
-                      foregroundColor: Colors.white,  
-
+                Text(
+                  "Etkinlik: $eventTitle",
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 10),
+                Text("Katılım için isteğini onaylaması gerekiyor."),
+                Spacer(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      child: Text("İptal"),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                    child: Text("İstek Gönder"),
-                    onPressed: () {
-                      // İstek gönderme işlemi buraya
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("İstek gönderildi")),
-                      );
-                    },
-                  ),
-                ],
-              )
-            ],
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF6F2DBD),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: Text("İstek Gönder"),
+                      onPressed:
+                          currentUserId == creatorId
+                              ? null
+                              : () async {
+                                // İstek gönderildiğinde, Firestore'a kaydediyoruz
+                                await FirebaseFirestore.instance
+                                    .collection('events')
+                                    .doc(eventId)
+                                    .collection('joinRequests')
+                                    .add({
+                                      'userId': currentUserId,
+                                      'status':
+                                          'pending', // Başlangıçta istek durumu 'pending'
+                                      'createdAt': FieldValue.serverTimestamp(),
+                                    });
+
+                                // 2. Etkinliği oluşturan kişiye bildirim ekliyoruz
+                                await FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(creatorId)
+                                    .collection('notifications')
+                                    .add({
+                                      'type': 'join_request',
+                                      'message':
+                                          '$currentUserId etkinliğinize katılmak için istek gönderdi.',
+                                      'eventId': eventId,
+                                      'createdAt': FieldValue.serverTimestamp(),
+                                    });
+
+                                // Popup'ı kapatıyoruz
+                                Navigator.pop(context);
+
+                                // Kullanıcıya SnackBar gösteriyoruz
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("İstek gönderildi")),
+                                );
+                              },
+                    ),
+                  ],
+                ),
+              ],
           ),
         ),
       );
     },
   );
 }
+
+
+
 
 
 
@@ -263,21 +288,13 @@ void showJoinRequestSheet(BuildContext context, String eventTitle) {
                      ),
                      onPressed: (){
 
-                      setState(() {
-                        if(favorideMi){
-
-                          favoriEvents.remove(index);
-                        }
-                        else{
-                          favoriEvents.add(index);
-                        }
-                      });
-                     }
-                  ),
-                    onTap: () {
-                        showJoinRequestSheet(context, "Etkinlik Başlığı"); // Etkinlik detaylarına git
-                    },
-                  ),
+toggleFavori(eventId); // Yıldız tıklandığında favori ekle/çıkar
+                          },
+                        ),
+                        onTap: () {
+                          showJoinRequestSheet(context, eventId, eventTitle, creatorId);
+                        },
+                      ),
                 );
               },
             ),

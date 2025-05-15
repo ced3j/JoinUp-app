@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-
-import 'package:intl/intl.dart'; // Tarih formatlama için
-import 'package:join_up/home_screen.dart';
+import 'package:intl/intl.dart';
+import 'package:join_up/home_screen.dart'; // Tarih formatlama için
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // Etkinlik modeli - Verileri tutacak sınıf
 class Event {
@@ -32,7 +33,7 @@ abstract class EventServiceInterface {
 // Etkinlik servis implementasyonu - Somut sınıf
 class EventService implements EventServiceInterface {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
+  DateTime now = DateTime.now();
   @override
   Future<bool> createEvent(Event event) async {
     try {
@@ -41,10 +42,10 @@ class EventService implements EventServiceInterface {
         'location': event.location,
         'description': event.description,
         'gender': event.gender,
-        'duration': event.duration.toIso8601String(),
-        'creatorId': event.creatorId,
-        'maxParticipants' : event.maxParticipants,
+        'duration': now.toIso8601String(),
+        'creatorId': FirebaseAuth.instance.currentUser!.uid,
         'createdAt': FieldValue.serverTimestamp(), // zaman etiketi
+        
       });
 
       return true;
@@ -58,7 +59,7 @@ class EventService implements EventServiceInterface {
 // Etkinlik Oluşturma Sayfası Widget'ı
 class CreateEventPage extends StatefulWidget {
   final String userId; // Kullanıcı ID'si (dışarıdan alınacak)
-
+  
   const CreateEventPage({
     super.key,
     required this.userId,
@@ -116,7 +117,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         gender: _selectedGender,
         duration: _selectedDate!,
         creatorId: widget.userId,
-        maxParticipants: int.parse(_maxParticipantsController.text), // Katılımcı sayısını al 
+        
       );
 
       // Servis üzerinden etkinlik oluştur
