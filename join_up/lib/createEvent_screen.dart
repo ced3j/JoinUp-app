@@ -43,6 +43,7 @@ class EventService implements EventServiceInterface {
         'duration': now.toIso8601String(),
         'creatorId': FirebaseAuth.instance.currentUser!.uid,
         'createdAt': FieldValue.serverTimestamp(), // zaman etiketi
+        
       });
 
       return true;
