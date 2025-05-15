@@ -50,8 +50,9 @@ class NotificationsPage extends StatelessWidget {
                               ) // Bekleyen istekleri getir
                               .snapshots(),
                       builder: (context, requestSnapshot) {
-                        if (!requestSnapshot.hasData)
+                        if (!requestSnapshot.hasData) {
                           return const SizedBox.shrink();
+                        }
 
                         final requests = requestSnapshot.data!.docs;
 
@@ -152,6 +153,4 @@ class NotificationsPage extends StatelessWidget {
       ),
     );
   }
-
 }
-
