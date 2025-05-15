@@ -34,6 +34,7 @@ class _HomePageState extends State<HomePage> {
     searchController.dispose();
     super.dispose();
   }
+final Set<int> favoriEvents = {};
 
 void showJoinRequestSheet(
     BuildContext context,
@@ -134,12 +135,14 @@ void showJoinRequestSheet(
                   ],
                 ),
               ],
-            ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
+
+
 
 
 
@@ -155,36 +158,41 @@ void showJoinRequestSheet(
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: primaryColor,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.star),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => FavoritesPage(
-                    favorites: favoriEvents, // Favori etkinliklerin ID'leri
-                    toggleFavori: toggleFavori, // Favori ekleme/çıkarma fonksiyonu
-                  ),
-                ),
-              ).then((_) {
-                setState(() {}); // Favoriler sayfasından döndüğümüzde listeyi güncelle
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: (){
-              //bildirimler sayfasına git
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context)=>const NotificationsPage(),
-                  )
-                );
-            },
-          ),
+
+        IconButton(
+        icon: const Icon(Icons.star),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => FavoritesPage(
+                favorites : favoriEvents,
+                toggleFavori: toggleFavori,
+        ),
+      ),
+    ).then((_) {
+      setState(() {}); // Geri dönünce liste güncellensin
+    });
+  },
+),
+      IconButton(
+        icon: const Icon(Icons.notifications),
+        onPressed: (){
+          //Bildirimler Sayfasına git
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context)=> const NotificationsPage(),
+            ),
+          );
+        },
+
+      ),
         ],
       ),
+
+
+
       body: Column(
         children: [
           Container(
@@ -257,51 +265,36 @@ void showJoinRequestSheet(
           ),
 
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('events').snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return Center(child: CircularProgressIndicator());
-                }
+            child: ListView.builder(
+              itemCount: 10,
+              itemBuilder: (context, index) {
+                final bool favorideMi = favoriEvents.contains(index);
+                return Card(
+                  margin: const EdgeInsets.all(8.0),
+                  child: ListTile(
+                    leading: const Icon(LucideIcons.calendar),
+                    title: Text('Etkinlik Başlığı $index'),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Açıklama $index'),
+                        Text('Konum: Şehir $index'),
+                      ],
+                    ),
+                    trailing: IconButton(
+                      icon: Icon(
+                        favorideMi ? LucideIcons.star : LucideIcons.starOff,
+                        color: favorideMi ? Colors.amber : Colors.grey,                      
+                     ),
+                     onPressed: (){
 
-                var events = snapshot.data!.docs;
-
-                return ListView.builder(
-                  itemCount: events.length,
-                  itemBuilder: (context, index) {
-                    var event = events[index];
-                    var eventId = event.id;  // Etkinliğin benzersiz ID'sini alıyoruz
-										final eventTitle = event['title']; // Etkinlik Başlığı
-										final creatorId = event['creatorId'];										
-                    var favorideMi = favoriEvents.contains(eventId);
-
-                    return Card(
-                      margin: const EdgeInsets.all(8.0),
-                      child: ListTile(
-                        leading: const Icon(LucideIcons.calendar),
-                        title: Text(eventTitle),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(event['description']),
-                            Text('Konum: ${event['location']}'),
-                          ],
-                        ),
-                        trailing: IconButton(
-                          icon: Icon(
-                            favorideMi ? LucideIcons.star : LucideIcons.starOff,
-                            color: favorideMi ? Colors.amber : Colors.grey,
-                          ),
-                          onPressed: () {
-                            toggleFavori(eventId); // Yıldız tıklandığında favori ekle/çıkar
+toggleFavori(eventId); // Yıldız tıklandığında favori ekle/çıkar
                           },
                         ),
                         onTap: () {
                           showJoinRequestSheet(context, eventId, eventTitle, creatorId);
                         },
                       ),
-                    );
-                  },
                 );
               },
             ),
@@ -332,7 +325,8 @@ void showJoinRequestSheet(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const ProfilePage(),
-                ),
+                ), // Daha sonradan bu yönlendirilen sayfalar değişecek
+
               );
               break;
           }
