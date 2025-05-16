@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "392286040873",
+    "project_id": "joinup-c792e",
+    "storage_bucket": "joinup-c792e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:392286040873:android:e4a61053f94ecc17e3bd38",
+        "android_client_info": {
+          "package_name": "com.example.join_up"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUgE2x147nM6uwQVI3zGKTmboVQl6Hxz4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
