@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:join_up/account_screen.dart';
+import 'package:join_up/login_screen.dart';
 import 'package:join_up/my_events_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -11,7 +13,7 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Scaffold(  
       appBar: AppBar(
         title: const Text("Profil"),
         centerTitle: true,
@@ -44,7 +46,13 @@ class ProfilePage extends StatelessWidget {
                     leading: const Icon(Icons.person),
                     title: const Text("Hesap Bilgileri"),
                     onTap: () {
-                      // Hesap bilgileri sayfası
+                      Navigator.push(
+                          context,
+                          
+                          MaterialPageRoute(
+                             builder: (context) => AccountScreen(),
+                            ),// Hesap bilgileri sayfası
+                      );
                     },
                   ),
                   ListTile(
@@ -71,7 +79,11 @@ class ProfilePage extends StatelessWidget {
                     leading: const Icon(Icons.logout),
                     title: const Text("Çıkış Yap"),
                     onTap: () {
-                      // Çıkış işlemi
+                      Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => LoginPage()),
+                          (Route<dynamic> route) => false, // Çıkış işlemi
+                      );
                     },
                   ),
                 ],
