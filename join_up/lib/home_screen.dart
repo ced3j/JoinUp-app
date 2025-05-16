@@ -98,19 +98,52 @@ class _HomePageState extends State<HomePage> {
                           currentUserId == creatorId
                               ? null
                               : () async {
-                                // İstek gönderildiğinde, Firestore'a kaydediyoruz
-                                await FirebaseFirestore.instance
+                                final joinRequestRef = FirebaseFirestore
+                                    .instance
                                     .collection('events')
                                     .doc(eventId)
-                                    .collection('joinRequests')
-                                    .add({
-                                      'userId': currentUserId,
-                                      'status':
-                                          'pending', // Başlangıçta istek durumu 'pending'
-                                      'createdAt': FieldValue.serverTimestamp(),
-                                    });
+                                    .collection('joinRequests');
 
-                                // 2. Etkinliği oluşturan kişiye bildirim ekliyoruz
+                                // Daha önce istek gönderilmiş mi kontrolü
+                                final existingRequest =
+                                    await joinRequestRef
+                                        .where(
+                                          'userId',
+                                          isEqualTo: currentUserId,
+                                        )
+                                        .limit(1)
+                                        .get();
+
+                                if (existingRequest.docs.isNotEmpty) {
+                                  // Zaten istek varsa AlertDialog göster
+                                  showDialog(
+                                    context: context,
+                                    builder:
+                                        (context) => AlertDialog(
+                                          title: Text("Uyarı"),
+                                          content: Text(
+                                            "Bu etkinliğe daha önce istek gönderdiniz.",
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed:
+                                                  () => Navigator.pop(context),
+                                              child: Text("Tamam"),
+                                            ),
+                                          ],
+                                        ),
+                                  );
+                                  return;
+                                }
+
+                                // İstek gönderiliyor
+                                await joinRequestRef.add({
+                                  'userId': currentUserId,
+                                  'status': 'pending',
+                                  'createdAt': FieldValue.serverTimestamp(),
+                                });
+
+                                // Bildirim gönderiliyor
                                 await FirebaseFirestore.instance
                                     .collection('users')
                                     .doc(creatorId)
@@ -123,15 +156,28 @@ class _HomePageState extends State<HomePage> {
                                       'createdAt': FieldValue.serverTimestamp(),
                                     });
 
-                                // Popup'ı kapatıyoruz
+                                // Popup'ı kapat
                                 Navigator.pop(context);
 
-                                // Kullanıcıya SnackBar gösteriyoruz
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text("İstek gönderildi")),
+                                // Başarılı AlertDialog göster
+                                showDialog(
+                                  context: context,
+                                  builder:
+                                      (context) => AlertDialog(
+                                        title: Text("Başarılı"),
+                                        content: Text("İstek gönderildi."),
+                                        actions: [
+                                          TextButton(
+                                            onPressed:
+                                                () => Navigator.pop(context),
+                                            child: Text("Tamam"),
+                                          ),
+                                        ],
+                                      ),
                                 );
                               },
-                    ),
+                    )
+
                   ],
                 ),
               ],
