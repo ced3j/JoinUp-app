@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 
 class ChatScreen extends StatelessWidget {
   final String eventName;
+  final String eventId;
 
-  const ChatScreen({super.key, required this.eventName});
+  const ChatScreen({
+    super.key,
+    required this.eventName,
+    required this.eventId,
+  });
 
   @override
   Widget build(BuildContext context) {
