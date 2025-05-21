@@ -88,23 +88,23 @@ class _LoginPageState extends State<LoginPage> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                        onPressed: (){
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ForgotPasswordPage(),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          "Şifremi Unuttum",
-                          style: GoogleFonts.montserrat(
-                            color: const Color(0xFF6F2DBD),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ForgotPasswordPage(),
                           ),
+                        );
+                      },
+                      child: Text(
+                        "Şifremi Unuttum",
+                        style: GoogleFonts.montserrat(
+                          color: const Color(0xFF6F2DBD),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         ),
                       ),
+                    ),
                   ),
                   const SizedBox(height: 30),
                   buildLoginButton(),

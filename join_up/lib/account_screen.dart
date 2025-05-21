@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 const Color primaryColor = Color(0xFF6F2DBD); // Mor
 const Color accentColor = Color(0xFFFFD600); // Sarı
-const Color backgroundFieldColor = Color(0xFFF5F5F5);
+const Color backgroundFieldColor = Color(0xFFFEF7FF); // Yeni arka plan
 const Color labelTextColor = Color(0xFF0E1116);
 
 class AccountScreen extends StatefulWidget {
@@ -22,7 +22,7 @@ class _AccountInfoScreenState extends State<AccountScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:Color(0xFFF5F5F5),
+      backgroundColor: backgroundFieldColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -43,15 +43,12 @@ class _AccountInfoScreenState extends State<AccountScreen> {
                   padding: const EdgeInsets.only(top: 16),
                   child: Stack(
                     children: [
-                      // Geri tuşu solda
                       Positioned(
                         left: 0,
                         top: 0,
                         bottom: 65,
                         child: Padding(
-                          padding: const EdgeInsets.only(
-                            top: 8.0,
-                          ), // Geri tuşu biraz yukarı kaydırdım
+                          padding: const EdgeInsets.only(top: 8.0),
                           child: IconButton(
                             icon: const Icon(
                               Icons.arrow_back,
@@ -61,8 +58,6 @@ class _AccountInfoScreenState extends State<AccountScreen> {
                           ),
                         ),
                       ),
-
-                      // Ortadaki başlık
                       Center(
                         child: Padding(
                           padding: const EdgeInsets.only(bottom: 65),
@@ -79,16 +74,13 @@ class _AccountInfoScreenState extends State<AccountScreen> {
                     ],
                   ),
                 ),
-
                 Positioned(
                   bottom: -50,
                   left: MediaQuery.of(context).size.width / 2 - 50,
                   child: CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.grey[200],
-                    backgroundImage: const AssetImage(
-                      'assets/profile.jpg',
-                    ), // Profil resmi yolu
+                    backgroundImage: const AssetImage('assets/profile.jpg'),
                     child: Align(
                       alignment: Alignment.bottomRight,
                       child: CircleAvatar(
@@ -106,7 +98,7 @@ class _AccountInfoScreenState extends State<AccountScreen> {
               ],
             ),
 
-            const SizedBox(height: 70), // profil alanıyla form arasında boşluk
+            const SizedBox(height: 70),
 
             Expanded(
               child: SingleChildScrollView(
@@ -142,10 +134,10 @@ class _AccountInfoScreenState extends State<AccountScreen> {
                       ),
                       const SizedBox(height: 40),
                       Align(
-                        alignment: Alignment.centerRight, // Sağa hizala
+                        alignment: Alignment.centerRight,
                         child: SizedBox(
-                          width: 140, // Buton genişliği (isteğe göre ayarla)
-                          height: 45, // Buton yüksekliği
+                          width: 140,
+                          height: 45,
                           child: ElevatedButton(
                             onPressed: () {
                               if (_formKey.currentState!.validate()) {
@@ -164,7 +156,7 @@ class _AccountInfoScreenState extends State<AccountScreen> {
                                 58,
                               ),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(25),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                             child: const Text(
@@ -177,7 +169,6 @@ class _AccountInfoScreenState extends State<AccountScreen> {
                           ),
                         ),
                       ),
-
                     ],
                   ),
                 ),
