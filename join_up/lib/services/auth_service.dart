@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
   final FirebaseAuth auth = FirebaseAuth.instance;
@@ -11,7 +12,7 @@ class AuthService {
         email: email,
         password: password,
       );
-      
+
       // Başarıyla kayıt olduktan sonra kullanıcıyı döndür
       User? user = userCredential.user;
       if (user != null) {
@@ -22,6 +23,17 @@ class AuthService {
       print("Kayıt olma hatası: $e");
       return null;
     }
+  }
+
+  Future<void> saveUserToFirestore(
+    String uid,
+    String fullName,
+    String email,
+  ) async {
+    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      'fullName': fullName,
+      'email': email,
+    });
   }
 
   // Kullanıcı giriş yapma

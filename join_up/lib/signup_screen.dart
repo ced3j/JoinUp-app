@@ -17,37 +17,41 @@ class _SignupPageState extends State<SignupPage> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
 
   bool obscurePassword = true;
-
   void signUp() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
     String confirmPassword = confirmPasswordController.text.trim();
+    String username = usernameController.text.trim();
 
     if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Şifreler uyuşmuyor!")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Şifreler uyuşmuyor!")));
       return;
     }
 
-    // Kayıt işlemi
     var user = await authService.signUpWithEmailPassWord(email, password);
 
     if (user != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Kayıt Başarılı!")),
-      );
+      // Firestore'a kullanıcı bilgilerini ekle
+      await authService.saveUserToFirestore(user.uid, username, email);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Kayıt Başarılı!")));
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const UserSettings()),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Kayıt Başarısız!")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Kayıt Başarısız!")));
     }
   }
 
@@ -183,14 +187,16 @@ class _SignupPageState extends State<SignupPage> {
       onPressed: signUp,
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFF6F2DBD),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 16),
       ),
       child: Text(
         "Kayıt Ol",
-        style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+        style: GoogleFonts.montserrat(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
       ),
     );
   }
@@ -201,15 +207,25 @@ class _SignupPageState extends State<SignupPage> {
       children: [
         Text(
           "Zaten bir hesabınız var mı?",
-          style: GoogleFonts.montserrat(color: const Color(0xFF0E1116), fontSize: 14),
+          style: GoogleFonts.montserrat(
+            color: const Color(0xFF0E1116),
+            fontSize: 14,
+          ),
         ),
         TextButton(
           onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginPage()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+            );
           },
           child: Text(
             "Oturum Açın",
-            style: GoogleFonts.montserrat(color: const Color(0xFF6F2DBD), fontWeight: FontWeight.bold, fontSize: 14),
+            style: GoogleFonts.montserrat(
+              color: const Color(0xFF6F2DBD),
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
           ),
         ),
       ],
@@ -219,9 +235,14 @@ class _SignupPageState extends State<SignupPage> {
   InputDecoration inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: GoogleFonts.montserrat(color: const Color(0xFF0E1116).withOpacity(0.6)),
+      labelStyle: GoogleFonts.montserrat(
+        color: const Color(0xFF0E1116).withOpacity(0.6),
+      ),
       prefixIcon: Icon(icon, color: const Color(0xFF6F2DBD)),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -236,10 +257,17 @@ class _SignupPageState extends State<SignupPage> {
     );
   }
 
-  InputDecoration inputDecorationWithVisibility(String label, IconData icon, VoidCallback onPressed) {
+  InputDecoration inputDecorationWithVisibility(
+    String label,
+    IconData icon,
+    VoidCallback onPressed,
+  ) {
     return inputDecoration(label, icon).copyWith(
       suffixIcon: IconButton(
-        icon: Icon(obscurePassword ? Icons.visibility_off : Icons.visibility, color: const Color(0xFF6F2DBD)),
+        icon: Icon(
+          obscurePassword ? Icons.visibility_off : Icons.visibility,
+          color: const Color(0xFF6F2DBD),
+        ),
         onPressed: onPressed,
       ),
     );
