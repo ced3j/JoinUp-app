@@ -1,68 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'event_screen.dart'; // sohbet ekranını import et
 
 class EventService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Kullanıcıya ait oluşturduğu etkinlikleri çekme
+  // Oluşturduğum etkinlikleri çek
   Future<List<Event>> getCreatedEvents(String userId) async {
-    try {
-      final snapshot =
-          await _firestore
-              .collection('events')
-              .where('creatorId', isEqualTo: userId)
-              .get();
+    final snapshot =
+        await _firestore
+            .collection('events')
+            .where('creatorId', isEqualTo: userId)
+            .get();
 
-      return snapshot.docs
-          .map(
-            (doc) => Event(
-              title: doc['title'],
-              location: doc['location'],
-              description: doc['description'],
-              gender: doc['gender'],
-              duration: DateTime.parse(doc['duration']),
-              creatorId: doc['creatorId'],
-            ),
-          )
-          .toList();
-    } catch (e) {
-      print('Hata: $e');
-      return [];
-    }
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      return Event(
+        eventId: doc.id,
+        title: data['title'],
+        location: data['location'],
+        description: data['description'],
+        gender: data['gender'],
+        duration: DateTime.parse(data['duration']),
+        creatorId: data['creatorId'],
+      );
+    }).toList();
   }
 
-  // Kullanıcının katıldığı etkinlikleri çekme
+  // Katıldığım etkinlikleri çek
   Future<List<Event>> getAttendedEvents(String userId) async {
-    try {
-      final snapshot =
-          await _firestore
-              .collection('users')
-              .doc(userId)
-              .collection('attendedEvents') // Katıldıkları etkinlikler
-              .get();
+    final snap =
+        await _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('attendedEvents')
+            .get();
 
-      return snapshot.docs
-          .map(
-            (doc) => Event(
-              title: doc['eventTitle'],
-              location: doc['eventLocation'],
-              description:
-                  '', // Eğer açıklama gerekiyorsa buraya ekleyebilirsin
-              gender: '', // Gereksizse boş bırakabilirsin
-              duration: DateTime.parse(doc['joinedAt'].toDate().toString()),
-              creatorId: '', // Burada etkinlik sahibi bilgisi gerekmez
-            ),
-          )
-          .toList();
-    } catch (e) {
-      print('Hata: $e');
-      return [];
-    }
+    return snap.docs.map((doc) {
+      final d = doc.data();
+      return Event(
+        eventId: doc.id,
+        title: d['eventTitle'],
+        location: d['eventLocation'],
+        description: '',
+        gender: '',
+        duration: d['joinedAt'].toDate(),
+        creatorId: '',
+      );
+    }).toList();
+  }
+
+  // Etkinliği sil
+  Future<void> deleteEvent(String eventId) async {
+    await _firestore.collection('events').doc(eventId).delete();
   }
 }
 
 class Event {
+  final String eventId; // 👈 yeni alan
   final String title;
   final String location;
   final String description;
@@ -71,6 +67,7 @@ class Event {
   final String creatorId;
 
   Event({
+    required this.eventId,
     required this.title,
     required this.location,
     required this.description,
@@ -82,7 +79,6 @@ class Event {
 
 class MyEventsPage extends StatefulWidget {
   final String userId;
-
   const MyEventsPage({super.key, required this.userId});
 
   @override
@@ -107,14 +103,64 @@ class _MyEventsPageState extends State<MyEventsPage>
     super.dispose();
   }
 
-  // Etkinlik oluşturduğunda çekilen etkinlikler
-  Future<List<Event>> _getCreatedEvents() async {
-    return await _eventService.getCreatedEvents(widget.userId);
-  }
+  Future<List<Event>> _getCreatedEvents() async =>
+      _eventService.getCreatedEvents(widget.userId);
 
-  // Katıldığın etkinlikleri çekme
-  Future<List<Event>> _getAttendedEvents() async {
-    return await _eventService.getAttendedEvents(widget.userId);
+  Future<List<Event>> _getAttendedEvents() async =>
+      _eventService.getAttendedEvents(widget.userId);
+
+  // 👇 Kart widget’ı
+  Widget _eventTile(Event e, {required bool canDelete}) {
+    final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
+    return ListTile(
+      title: Text(e.title),
+      subtitle: Text(e.location),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(dateFormat.format(e.duration)),
+          if (canDelete)
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder:
+                      (context) => AlertDialog(
+                        title: const Text("Etkinliği sil"),
+                        content: const Text(
+                          "Bu etkinliği silmek istediğinize emin misiniz?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text("İptal"),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text("Sil"),
+                          ),
+                        ],
+                      ),
+                );
+
+                if (confirm == true) {
+                  await _eventService.deleteEvent(e.eventId);
+                  setState(() {}); // listeyi yenile
+                }
+              },
+            ),
+        ],
+      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChatScreen(eventName: e.title, eventId: e.eventId),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -131,7 +177,6 @@ class _MyEventsPageState extends State<MyEventsPage>
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
-          indicatorWeight: 3.0,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white,
           tabs: const [
@@ -144,74 +189,39 @@ class _MyEventsPageState extends State<MyEventsPage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          // Oluşturulan etkinlikler
           FutureBuilder<List<Event>>(
             future: _getCreatedEvents(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
+            builder: (context, snap) {
+              if (!snap.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
-
-              if (snapshot.hasError) {
-                return const Center(child: Text("Bir hata oluştu"));
-              }
-
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              final list = snap.data!;
+              if (list.isEmpty) {
                 return const Center(
                   child: Text("Henüz etkinlik oluşturmadınız."),
                 );
               }
-
-              final events = snapshot.data!;
-              final dateFormat = DateFormat("dd.MM.yyyy HH:mm");
-
-              return ListView.builder(
-                itemCount: events.length,
-                itemBuilder: (context, index) {
-                  final event = events[index];
-                  return ListTile(
-                    title: Text(event.title),
-                    subtitle: Text(event.location),
-                    trailing: Text(dateFormat.format(event.duration)),
-                    onTap: () {
-                      // Etkinlik detayına gitmek istersen burada yönlendirme yapılabilir
-                    },
-                  );
-                },
+              return ListView(
+                children:
+                    list.map((e) => _eventTile(e, canDelete: true)).toList(),
               );
             },
           ),
-          // Katıldığın etkinlikler
           FutureBuilder<List<Event>>(
             future: _getAttendedEvents(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
+            builder: (context, snap) {
+              if (!snap.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
-
-              if (snapshot.hasError) {
-                return const Center(child: Text("Bir hata oluştu"));
-              }
-
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              final list = snap.data!;
+              if (list.isEmpty) {
                 return const Center(
                   child: Text("Henüz katıldığınız etkinlik yok."),
                 );
               }
-
-              final events = snapshot.data!;
-              final dateFormat = DateFormat("dd.MM.yyyy HH:mm");
-
-              return ListView.builder(
-                itemCount: events.length,
-                itemBuilder: (context, index) {
-                  final event = events[index];
-                  return ListTile(
-                    title: Text(event.title),
-                    subtitle: Text(event.location),
-                    trailing: Text(dateFormat.format(event.duration)),
-                  );
-                },
+              return ListView(
+                children:
+                    list.map((e) => _eventTile(e, canDelete: false)).toList(),
               );
             },
           ),

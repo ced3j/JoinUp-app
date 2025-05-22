@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:join_up/home_screen.dart'; // Tarih formatlama için
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:join_up/home_screen.dart';
 
 // Etkinlik modeli - Verileri tutacak sınıf
 class Event {
