@@ -47,7 +47,7 @@ class _HomePageState extends State<HomePage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
@@ -56,10 +56,10 @@ class _HomePageState extends State<HomePage> {
             bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
           child: Container(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             height:
                 MediaQuery.of(context).size.height *
-                0.65, // %60 ekran yüksekliği
+                0.65, // %65 ekran yüksekliği
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -67,7 +67,7 @@ class _HomePageState extends State<HomePage> {
                   child: Container(
                     width: 50,
                     height: 5,
-                    margin: EdgeInsets.only(bottom: 16),
+                    margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
                       color: Colors.grey[400],
                       borderRadius: BorderRadius.circular(10),
@@ -76,24 +76,26 @@ class _HomePageState extends State<HomePage> {
                 ),
                 Text(
                   "Etkinlik: $eventTitle",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                SizedBox(height: 10),
-                Text("Katılım için isteğini onaylaması gerekiyor."),
-                Spacer(),
+                const SizedBox(height: 10),
+                const Text("Katılım için isteğini onaylaması gerekiyor."),
+                const Spacer(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      child: Text("İptal"),
                       onPressed: () => Navigator.pop(context),
+                      child: const Text("İptal"),
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF6F2DBD),
+                        backgroundColor: const Color(0xFF6F2DBD),
                         foregroundColor: Colors.white,
                       ),
-                      child: Text("İstek Gönder"),
                       onPressed:
                           currentUserId == creatorId
                               ? null
@@ -120,15 +122,15 @@ class _HomePageState extends State<HomePage> {
                                     context: context,
                                     builder:
                                         (context) => AlertDialog(
-                                          title: Text("Uyarı"),
-                                          content: Text(
+                                          title: const Text("Uyarı"),
+                                          content: const Text(
                                             "Bu etkinliğe daha önce istek gönderdiniz.",
                                           ),
                                           actions: [
                                             TextButton(
                                               onPressed:
                                                   () => Navigator.pop(context),
-                                              child: Text("Tamam"),
+                                              child: const Text("Tamam"),
                                             ),
                                           ],
                                         ),
@@ -164,18 +166,21 @@ class _HomePageState extends State<HomePage> {
                                   context: context,
                                   builder:
                                       (context) => AlertDialog(
-                                        title: Text("Başarılı"),
-                                        content: Text("İstek gönderildi."),
+                                        title: const Text("Başarılı"),
+                                        content: const Text(
+                                          "İstek gönderildi.",
+                                        ),
                                         actions: [
                                           TextButton(
                                             onPressed:
                                                 () => Navigator.pop(context),
-                                            child: Text("Tamam"),
+                                            child: const Text("Tamam"),
                                           ),
                                         ],
                                       ),
                                 );
                               },
+                      child: const Text("İstek Gönder"),
                     ),
                   ],
                 ),
@@ -190,7 +195,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF6F2DBD); // Mor ton
-    const Color darkColor = Color(0xFF0E1116); // Koyu renk
+    // const Color darkColor = Color(0xFF0E1116); // darkColor kullanılmadığı için kaldırıldı.
 
     return Scaffold(
       appBar: AppBar(
@@ -235,18 +240,15 @@ class _HomePageState extends State<HomePage> {
       body: Column(
         children: [
           Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
             ),
             child: Row(
               children: [
                 // Filtre butonu
                 Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 8.0,
-                    vertical: 4.0,
-                  ),
+                  margin: const EdgeInsets.only(right: 8.0),
                   child: IconButton(
                     onPressed: () {
                       print("Filtre butonuna tıklandı!");
@@ -267,9 +269,19 @@ class _HomePageState extends State<HomePage> {
                     controller: searchController,
                     decoration: InputDecoration(
                       hintText: "Etkinlik Ara...",
-                      hintStyle: TextStyle(color: darkColor.withOpacity(0.5)),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                      hintStyle: TextStyle(
+                        color: Colors.black.withOpacity(0.5),
+                      ), // darkColor yerine doğrudan Colors.black kullandım
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 15,
+                        horizontal: 10,
+                      ),
                     ),
                     style: const TextStyle(color: Colors.black),
                     onChanged: (value) {
@@ -280,10 +292,7 @@ class _HomePageState extends State<HomePage> {
 
                 // Arama ikonu
                 Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 8.0,
-                    vertical: 4.0,
-                  ),
+                  margin: const EdgeInsets.only(left: 8.0),
                   child: IconButton(
                     onPressed: () {
                       print(
@@ -309,7 +318,7 @@ class _HomePageState extends State<HomePage> {
                   FirebaseFirestore.instance.collection('events').snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 var events = snapshot.data!.docs;
@@ -318,11 +327,26 @@ class _HomePageState extends State<HomePage> {
                   itemCount: events.length,
                   itemBuilder: (context, index) {
                     var event = events[index];
-                    var eventId =
-                        event.id; // Etkinliğin benzersiz ID'sini alıyoruz
-                    final eventTitle = event['title']; // Etkinlik Başlığı
+                    var eventId = event.id;
+                    final eventTitle = event['title'];
                     final creatorId = event['creatorId'];
                     var favorideMi = favoriEvents.contains(eventId);
+
+                    String locationText = 'Konum Bilgisi Yok';
+                    final dynamic locationData =
+                        event['location']; // dynamic olarak okuyalım
+
+                    // Konum verisinin tipini kontrol et
+                    if (locationData is GeoPoint) {
+                      // Eğer GeoPoint ise, enlem ve boylamı al
+                      locationText =
+                          'Enlem: ${locationData.latitude.toStringAsFixed(4)}, Boylam: ${locationData.longitude.toStringAsFixed(4)}';
+                    } else if (locationData is String &&
+                        locationData.isNotEmpty) {
+                      // Eğer String ise, doğrudan kullan
+                      locationText = 'Konum: $locationData';
+                    }
+                    // Eğer null veya başka bir tipte ise varsayılan 'Konum Bilgisi Yok' kalır.
 
                     return Card(
                       margin: const EdgeInsets.all(8.0),
@@ -333,7 +357,7 @@ class _HomePageState extends State<HomePage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(event['description']),
-                            Text('Konum: ${event['location']}'),
+                            Text('Konum: $locationText'),
                           ],
                         ),
                         trailing: IconButton(
@@ -342,9 +366,7 @@ class _HomePageState extends State<HomePage> {
                             color: favorideMi ? Colors.amber : Colors.grey,
                           ),
                           onPressed: () {
-                            toggleFavori(
-                              eventId,
-                            ); // Yıldız tıklandığında favori ekle/çıkar
+                            toggleFavori(eventId);
                           },
                         ),
                         onTap: () {
@@ -366,7 +388,7 @@ class _HomePageState extends State<HomePage> {
       ),
 
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0, // Seçili öğeyi belirtmek için
+        currentIndex: 0,
         onTap: (index) {
           switch (index) {
             case 0: // Ana Sayfa
@@ -376,14 +398,24 @@ class _HomePageState extends State<HomePage> {
               );
               break;
             case 1: // Etkinlik Oluştur
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder:
-                      (context) =>
-                          const CreateEventPage(userId: "current_user_id"),
-                ),
-              );
+              final currentUser = FirebaseAuth.instance.currentUser;
+              if (currentUser != null) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => CreateEventPage(userId: currentUser.uid),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Etkinlik oluşturmak için giriş yapmalısınız.',
+                    ),
+                  ),
+                );
+              }
               break;
             case 2: // Profil
               Navigator.push(

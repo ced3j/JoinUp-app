@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:join_up/location_pick_screen.dart'; // Harita sayfasını import et
+import 'package:join_up/location_pick_screen.dart';
 import 'package:join_up/home_screen.dart';
+import 'package:geocoding/geocoding.dart'; // Bu satırı ekleyin
 
 class CreateEventPage extends StatefulWidget {
   final String userId;
@@ -18,15 +19,46 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _locationController = TextEditingController();
 
   String _selectedGender = 'Herkes';
   DateTime? _selectedDate;
   bool _isLoading = false;
 
   LatLng? _selectedLocation; // Haritadan seçilen konum
+  String? _selectedLocationName; // Seçilen konumun adı (il/şehir)
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Konum adını alma fonksiyonu
+  Future<void> _getLocationName(LatLng location) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        location.latitude,
+        location.longitude,
+        localeIdentifier: "tr_TR", // Türkçe sonuçlar için
+      );
+      if (placemarks.isNotEmpty) {
+        // administrativeArea genellikle il adını verir (örn: "Ankara")
+        // locality genellikle ilçe/şehir merkezini verir (örn: "Çankaya" veya "Konyaaltı")
+        // Hangisi sizin için daha uygunsa onu kullanın. Genellikle 'administrativeArea' il için daha iyidir.
+        setState(() {
+          _selectedLocationName =
+              placemarks
+                  .first
+                  .administrativeArea; // veya placemarks.first.locality
+        });
+      } else {
+        setState(() {
+          _selectedLocationName = 'Konum adı bulunamadı';
+        });
+      }
+    } catch (e) {
+      print('Konum adı alınırken hata oluştu: $e');
+      setState(() {
+        _selectedLocationName = 'Hata: Konum adı alınamadı';
+      });
+    }
+  }
 
   Future<void> _createEvent() async {
     if (!_formKey.currentState!.validate()) return;
@@ -48,6 +80,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
     setState(() => _isLoading = true);
 
     try {
+      // Etkinlik oluşturmadan önce konum adını al
+      await _getLocationName(_selectedLocation!);
+
       await _firestore.collection('events').add({
         'title': _titleController.text,
         'description': _descriptionController.text,
@@ -59,6 +94,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
           _selectedLocation!.latitude,
           _selectedLocation!.longitude,
         ),
+        'locationName': _selectedLocationName, // Bu yeni alanı ekliyoruz
       });
 
       _resetForm();
@@ -83,9 +119,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
       _selectedGender = 'Herkes';
       _selectedDate = null;
       _selectedLocation = null;
+      _selectedLocationName = null; // Sıfırlarken konum adını da temizle
       _titleController.clear();
       _descriptionController.clear();
-      _locationController.clear();
     });
   }
 
@@ -106,14 +142,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _locationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF6F2DBD);
-    const darkColor = Color(0xFF0E1116);
 
     return Scaffold(
       appBar: AppBar(
@@ -128,7 +162,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
           onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => HomePage()),
+              MaterialPageRoute(builder: (_) => const HomePage()),
             );
           },
         ),
@@ -143,11 +177,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
               const SizedBox(height: 20),
               const Text(
                 'Etkinlik Bilgilerini Girin',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: darkColor,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -173,9 +203,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
               ElevatedButton.icon(
                 icon: const Icon(Icons.map),
                 label: Text(
-                  _selectedLocation == null
-                      ? 'Konum Seç'
-                      : 'Konum: ${_selectedLocation!.latitude.toStringAsFixed(4)}, ${_selectedLocation!.longitude.toStringAsFixed(4)}',
+                  _selectedLocationName == null ||
+                          _selectedLocationName!.isEmpty
+                      ? (_selectedLocation == null
+                          ? 'Konum Seç'
+                          : 'Konum adı alınıyor...')
+                      : 'Konum: $_selectedLocationName', // Konum adını göster
                 ),
                 onPressed: () async {
                   final picked = await Navigator.push(
@@ -188,22 +221,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
                   if (picked != null && picked is LatLng) {
                     setState(() {
                       _selectedLocation = picked;
-                      _locationController.text =
-                          '${picked.latitude.toStringAsFixed(5)}, ${picked.longitude.toStringAsFixed(5)}';
+                      _selectedLocationName =
+                          'Konum adı alınıyor...'; // Geçici metin
                     });
+                    // Konum adı alma işlemini başlat
+                    await _getLocationName(picked);
                   }
                 },
-              ),
-              const SizedBox(height: 8),
-
-              // Konumu metin olarak göster (gizli)
-              Offstage(
-                offstage: true,
-                child: TextFormField(
-                  controller: _locationController,
-                  validator:
-                      (value) => value!.isEmpty ? 'Konum seçilmedi' : null,
-                ),
               ),
               const SizedBox(height: 16),
 
