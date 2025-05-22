@@ -1,96 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:join_up/location_pick_screen.dart'; // Harita sayfasını import et
 import 'package:join_up/home_screen.dart';
 
-// Etkinlik modeli - Verileri tutacak sınıf
-class Event {
-  final String title; // Etkinlik başlığı
-  final String location; // Etkinlik yeri
-  final String description; // Açıklama
-  final String gender; // Katılımcı cinsiyeti (Herkes/Erkek/Kadın)
-  final DateTime duration; // Etkinlik bitiş tarihi
-  final String creatorId; // Etkinliği oluşturan kullanıcı ID'si
-
-  Event({
-    required this.title,
-    required this.location,
-    required this.description,
-    required this.gender,
-    required this.duration,
-    required this.creatorId,
-  });
-}
-
-// Etkinlik servis arayüzü - Soyut sınıf
-abstract class EventServiceInterface {
-  Future<bool> createEvent(Event event); // Etkinlik oluşturma metodu
-}
-
-// Etkinlik servis implementasyonu - Somut sınıf
-class EventService implements EventServiceInterface {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  DateTime now = DateTime.now();
-  @override
-  Future<bool> createEvent(Event event) async {
-    try {
-      await _firestore.collection('events').add({
-        'title': event.title,
-        'location': event.location,
-        'description': event.description,
-        'gender': event.gender,
-        'duration': now.toIso8601String(),
-        'creatorId': FirebaseAuth.instance.currentUser!.uid,
-        'createdAt': FieldValue.serverTimestamp(), // zaman etiketi
-      });
-
-      return true;
-    } catch (e) {
-      debugPrint('Firebase Error: $e');
-      return false;
-    }
-  }
-}
-
-// Etkinlik Oluşturma Sayfası Widget'ı
 class CreateEventPage extends StatefulWidget {
-  final String userId; // Kullanıcı ID'si (dışarıdan alınacak)
-
+  final String userId;
   const CreateEventPage({super.key, required this.userId});
 
   @override
   State<CreateEventPage> createState() => _CreateEventPageState();
 }
 
-// Etkinlik Oluşturma Sayfası State Sınıfı
 class _CreateEventPageState extends State<CreateEventPage> {
-  // Form kontrolü için global key
   final _formKey = GlobalKey<FormState>();
 
-  // Text field controller'ları
   final _titleController = TextEditingController();
-  final _locationController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _locationController = TextEditingController();
 
-  // Dropdown seçimi için değişken
   String _selectedGender = 'Herkes';
-
-  // Tarih seçimi için değişken
   DateTime? _selectedDate;
-
-  // Yükleme durumu
   bool _isLoading = false;
 
-  // Servis örneği
-  final EventService _eventService = EventService();
+  LatLng? _selectedLocation; // Haritadan seçilen konum
 
-  // Etkinlik oluşturma fonksiyonu
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   Future<void> _createEvent() async {
-    // Form validasyonu
     if (!_formKey.currentState!.validate()) return;
 
-    // Tarih seçilmiş mi kontrolü
     if (_selectedDate == null) {
       ScaffoldMessenger.of(
         context,
@@ -98,83 +38,82 @@ class _CreateEventPageState extends State<CreateEventPage> {
       return;
     }
 
-    setState(() => _isLoading = true); // Yükleme başladı
+    if (_selectedLocation == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Lütfen bir konum seçin')));
+      return;
+    }
+
+    setState(() => _isLoading = true);
 
     try {
-      // Yeni etkinlik nesnesi oluştur
-      final event = Event(
-        title: _titleController.text,
-        location: _locationController.text,
-        description: _descriptionController.text,
-        gender: _selectedGender,
-        duration: _selectedDate!,
-        creatorId: widget.userId,
+      await _firestore.collection('events').add({
+        'title': _titleController.text,
+        'description': _descriptionController.text,
+        'gender': _selectedGender,
+        'duration': _selectedDate!.toIso8601String(),
+        'creatorId': widget.userId,
+        'createdAt': FieldValue.serverTimestamp(),
+        'location': GeoPoint(
+          _selectedLocation!.latitude,
+          _selectedLocation!.longitude,
+        ),
+      });
+
+      _resetForm();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"${_titleController.text}" etkinliği oluşturuldu'),
+        ),
       );
-
-      // Servis üzerinden etkinlik oluştur
-      final success = await _eventService.createEvent(event);
-
-      if (success) {
-        _resetForm(); // Formu temizle
-        // Başarı mesajı göster
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('"${event.title}" etkinliği oluşturuldu')),
-        );
-      } else {
-        // Hata mesajı göster
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Etkinlik oluşturulamadı')),
-        );
-      }
     } catch (e) {
-      // Beklenmeyen hata durumu
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Hata: ${e.toString()}')));
     } finally {
-      setState(() => _isLoading = false); // Yükleme bitti
+      setState(() => _isLoading = false);
     }
   }
 
-  // Formu sıfırlama fonksiyonu
   void _resetForm() {
-    _formKey.currentState?.reset(); // Form state'ini resetle
+    _formKey.currentState?.reset();
     setState(() {
-      _selectedGender = 'Herkes'; // Varsayılan cinsiyet
-      _selectedDate = null; // Tarihi temizle
+      _selectedGender = 'Herkes';
+      _selectedDate = null;
+      _selectedLocation = null;
+      _titleController.clear();
+      _descriptionController.clear();
+      _locationController.clear();
     });
   }
 
-  // Tarih seçme fonksiyonu
   Future<void> _selectDate(BuildContext context) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(), // Bugünün tarihi ile başla
-      firstDate: DateTime.now(), // Seçilebilir en eski tarih
-      lastDate: DateTime.now().add(
-        const Duration(days: 365),
-      ), // 1 yıl sonrasına kadar
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
     );
 
-    if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked); // Seçilen tarihi kaydet
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
     }
   }
 
-  // Widget dispose edilirken controller'ları temizle
   @override
   void dispose() {
     _titleController.dispose();
-    _locationController.dispose();
     _descriptionController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 
-  // UI oluşturma
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF6F2DBD); // Ana renk
-    const darkColor = Color(0xFF0E1116); // Koyu renk
+    const primaryColor = Color(0xFF6F2DBD);
+    const darkColor = Color(0xFF0E1116);
 
     return Scaffold(
       appBar: AppBar(
@@ -189,7 +128,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
           onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => HomePage()), // Geri Tuşu
+              MaterialPageRoute(builder: (_) => HomePage()),
             );
           },
         ),
@@ -197,13 +136,11 @@ class _CreateEventPageState extends State<CreateEventPage> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
-          key: _formKey, // Form key'i bağla
+          key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 20),
-
-              // Başlık
               const Text(
                 'Etkinlik Bilgilerini Girin',
                 style: TextStyle(
@@ -213,15 +150,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 ),
               ),
               const SizedBox(height: 8),
-
-              // Açıklama metni
               const Text(
                 'Etkinliğinizin detaylarını aşağıda belirtin.',
                 style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
               const SizedBox(height: 24),
 
-              // Etkinlik başlığı input
+              // Başlık
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
@@ -234,20 +169,45 @@ class _CreateEventPageState extends State<CreateEventPage> {
               ),
               const SizedBox(height: 16),
 
-              // Konum input
-              TextFormField(
-                controller: _locationController,
-                decoration: const InputDecoration(
-                  labelText: 'Konum',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.location_on),
+              // Harita Konum Seçici
+              ElevatedButton.icon(
+                icon: const Icon(Icons.map),
+                label: Text(
+                  _selectedLocation == null
+                      ? 'Konum Seç'
+                      : 'Konum: ${_selectedLocation!.latitude.toStringAsFixed(4)}, ${_selectedLocation!.longitude.toStringAsFixed(4)}',
                 ),
-                validator:
-                    (value) => value!.isEmpty ? 'Bu alan zorunludur' : null,
+                onPressed: () async {
+                  final picked = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const LocationPickerPage(),
+                    ),
+                  );
+
+                  if (picked != null && picked is LatLng) {
+                    setState(() {
+                      _selectedLocation = picked;
+                      _locationController.text =
+                          '${picked.latitude.toStringAsFixed(5)}, ${picked.longitude.toStringAsFixed(5)}';
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+
+              // Konumu metin olarak göster (gizli)
+              Offstage(
+                offstage: true,
+                child: TextFormField(
+                  controller: _locationController,
+                  validator:
+                      (value) => value!.isEmpty ? 'Konum seçilmedi' : null,
+                ),
               ),
               const SizedBox(height: 16),
 
-              // Açıklama input
+              // Açıklama
               TextFormField(
                 controller: _descriptionController,
                 decoration: const InputDecoration(
@@ -261,7 +221,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
               ),
               const SizedBox(height: 16),
 
-              // Cinsiyet seçim dropdown
+              // Cinsiyet
               DropdownButtonFormField<String>(
                 value: _selectedGender,
                 decoration: const InputDecoration(
@@ -282,7 +242,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
               ),
               const SizedBox(height: 16),
 
-              // Tarih seçim alanı
+              // Tarih seçici
               InkWell(
                 onTap: () => _selectDate(context),
                 child: InputDecorator(
@@ -300,7 +260,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
               ),
               const SizedBox(height: 24),
 
-              // Gönder butonu
+              // Paylaş butonu
               ElevatedButton(
                 onPressed: _isLoading ? null : _createEvent,
                 style: ElevatedButton.styleFrom(
