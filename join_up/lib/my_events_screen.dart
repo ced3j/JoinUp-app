@@ -17,7 +17,7 @@ class EventService {
     return snapshot.docs.map((doc) {
       final data = doc.data();
       return Event(
-        eventId: doc.id, // 👈 id
+        eventId: doc.id,
         title: data['title'],
         location: data['location'],
         description: data['description'],
@@ -34,13 +34,13 @@ class EventService {
         await _firestore
             .collection('users')
             .doc(userId)
-            .collection('attendedEvents') // docs’un id’si = eventId
+            .collection('attendedEvents')
             .get();
 
     return snap.docs.map((doc) {
       final d = doc.data();
       return Event(
-        eventId: doc.id, // 👈 id burada
+        eventId: doc.id,
         title: d['eventTitle'],
         location: d['eventLocation'],
         description: '',
@@ -49,6 +49,11 @@ class EventService {
         creatorId: '',
       );
     }).toList();
+  }
+
+  // Etkinliği sil
+  Future<void> deleteEvent(String eventId) async {
+    await _firestore.collection('events').doc(eventId).delete();
   }
 }
 
@@ -104,22 +109,54 @@ class _MyEventsPageState extends State<MyEventsPage>
   Future<List<Event>> _getAttendedEvents() async =>
       _eventService.getAttendedEvents(widget.userId);
 
-  // 👇 ortak kart widget’ı
-  Widget _eventTile(Event e) {
+  // 👇 Kart widget’ı
+  Widget _eventTile(Event e, {required bool canDelete}) {
     final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
     return ListTile(
       title: Text(e.title),
       subtitle: Text(e.location),
-      trailing: Text(dateFormat.format(e.duration)),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(dateFormat.format(e.duration)),
+          if (canDelete)
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder:
+                      (context) => AlertDialog(
+                        title: const Text("Etkinliği sil"),
+                        content: const Text(
+                          "Bu etkinliği silmek istediğinize emin misiniz?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text("İptal"),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text("Sil"),
+                          ),
+                        ],
+                      ),
+                );
+
+                if (confirm == true) {
+                  await _eventService.deleteEvent(e.eventId);
+                  setState(() {}); // listeyi yenile
+                }
+              },
+            ),
+        ],
+      ),
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder:
-                (_) => ChatScreen(
-                  eventName: e.title,
-                  eventId: e.eventId, // sohbet ekranına id ve isim gönder
-                ),
+            builder: (_) => ChatScreen(eventName: e.title, eventId: e.eventId),
           ),
         );
       },
@@ -140,8 +177,8 @@ class _MyEventsPageState extends State<MyEventsPage>
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
-          labelColor: Colors.white, // Seçili tab metin rengi
-          unselectedLabelColor: Colors.white, // Seçili olmayan tab metin rengi
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white,
           tabs: const [
             Tab(text: "Oluşturduklarım"),
             Tab(text: "Katıldıklarım"),
@@ -152,7 +189,6 @@ class _MyEventsPageState extends State<MyEventsPage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          // 1) Oluşturduğum etkinlikler
           FutureBuilder<List<Event>>(
             future: _getCreatedEvents(),
             builder: (context, snap) {
@@ -165,10 +201,12 @@ class _MyEventsPageState extends State<MyEventsPage>
                   child: Text("Henüz etkinlik oluşturmadınız."),
                 );
               }
-              return ListView(children: list.map(_eventTile).toList());
+              return ListView(
+                children:
+                    list.map((e) => _eventTile(e, canDelete: true)).toList(),
+              );
             },
           ),
-          // 2) Katıldığım etkinlikler
           FutureBuilder<List<Event>>(
             future: _getAttendedEvents(),
             builder: (context, snap) {
@@ -181,7 +219,10 @@ class _MyEventsPageState extends State<MyEventsPage>
                   child: Text("Henüz katıldığınız etkinlik yok."),
                 );
               }
-              return ListView(children: list.map(_eventTile).toList());
+              return ListView(
+                children:
+                    list.map((e) => _eventTile(e, canDelete: false)).toList(),
+              );
             },
           ),
         ],
