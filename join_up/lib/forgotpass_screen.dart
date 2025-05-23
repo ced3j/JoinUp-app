@@ -1,33 +1,68 @@
-// Gerekli Flutter Material kütüphanesini içe aktarır
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
-
-
-// ForgotPasswordPage adında bir StatefulWidget tanımlıyoruz
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
 
-  // State nesnesini oluşturur
   @override
   _ForgotPasswordPageState createState() => _ForgotPasswordPageState();
 }
 
-
-
-// Widget'ın durumunu yöneten sınıf
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
-  // E-posta girişini kontrol etmek için TextEditingController
   final TextEditingController _emailController = TextEditingController();
+  late Future<String> _imageUrlFuture;
 
-  // Widget ağacını oluşturan build metodu
+  @override
+  void initState() {
+    super.initState();
+    _imageUrlFuture = _getImageUrlFromFirebaseStorage();
+  }
+
+  // Firebase Storage'dan görsel URL'si alma
+  Future<String> _getImageUrlFromFirebaseStorage() async {
+    try {
+      final ref = FirebaseStorage.instance.ref().child("palm-recognition.png");
+      return await ref.getDownloadURL();
+    } catch (e) {
+      debugPrint("Görsel alınamadı: $e");
+      return ''; // Boş dönerse hata ikonunu göstereceğiz
+    }
+  }
+
+  // Şifre sıfırlama işlemi
+  Future<void> _resetPassword() async {
+    String email = _emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Lütfen e-posta adresinizi girin")),
+      );
+      return;
+    }
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Şifre sıfırlama bağlantısı $email adresine gönderildi.",
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Hata: ${e.toString()}")));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Sabit renk tanımlamaları
-    const Color primaryColor = Color(0xFF6F2DBD); // Mor ton
-    const Color darkColor = Color(0xFF0E1116); // Koyu renk
+    const Color primaryColor = Color(0xFF6F2DBD);
+    const Color darkColor = Color(0xFF0E1116);
 
     return Scaffold(
-      // Uygulama çubuğu (AppBar)
       appBar: AppBar(
         title: const Text(
           "Şifremi Unuttum",
@@ -36,78 +71,70 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: primaryColor,
       ),
-      // Ekranın ana gövdesi
       body: Padding(
-        padding: const EdgeInsets.all(16.0), // Kenar boşlukları
-
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Image.asset(
-              "palm-recognition.png",
-              width: 250,
-              height: 250,
-              ),
+            FutureBuilder<String>(
+              future: _imageUrlFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator();
+                } else if (snapshot.hasError || snapshot.data == '') {
+                  return const Icon(Icons.image_not_supported, size: 100);
+                } else {
+                  return CachedNetworkImage(
+                    imageUrl: snapshot.data!,
+                    width: 250,
+                    height: 250,
+                    placeholder:
+                        (context, url) => const CircularProgressIndicator(),
+                    errorWidget:
+                        (context, url, error) =>
+                            const Icon(Icons.image_not_supported, size: 100),
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 24),
             Column(
-              mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.stretch,
-
               children: [
-                  // Başlık metni
-                  const Text(
-                    "E-posta adresinizi girin",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: darkColor,
-                    ),
+                const Text(
+                  "E-posta adresinizi girin",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: darkColor,
                   ),
-                  const SizedBox(height: 8), // Boşluk
-                  // Talimat metni
-                  const Text(
-                    "Şifre sıfırlama bağlantısı e-posta adresinize gönderilecektir.",
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Şifre sıfırlama bağlantısı e-posta adresinize gönderilecektir.",
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(
+                    labelText: "E-posta",
+                    hintText: "ornek@eposta.com",
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.email),
                   ),
-                  const SizedBox(height: 24), // Boşluk
-                  // E-posta giriş alanı
-                  TextField(
-                    controller: _emailController, // TextEditingController bağlama
-                    decoration: const InputDecoration(
-                      labelText: "E-posta",
-                      hintText: "ornek@eposta.com",
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.email),
-                    ),
-                    keyboardType: TextInputType.emailAddress, // E-posta klavyesi
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: _resetPassword,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  const SizedBox(height: 24), // Boşluk
-                  // Gönder butonu
-                  ElevatedButton(
-                    onPressed: () {
-                      // Butona basıldığında çalışacak kod
-                      String email = _emailController.text;
-                      if (email.isNotEmpty) {
-                        // Burada e-posta ile şifre sıfırlama işlemi yapılabilir
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Bağlantı $email adresine gönderildi")),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Lütfen e-posta adresinizi girin")),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor, // Buton arka plan rengi
-                      foregroundColor: Colors.white, // Buton metin/simgesi rengi
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text(
-                      "Gönder",
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ],
-
+                  child: const Text("Gönder", style: TextStyle(fontSize: 16)),
+                ),
+              ],
             ),
           ],
         ),
@@ -115,7 +142,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
-  // Widget yok edildiğinde controller'ı temizler
   @override
   void dispose() {
     _emailController.dispose();

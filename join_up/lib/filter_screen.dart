@@ -68,8 +68,11 @@ class _FilterScreenState extends State<FilterScreen> {
               children: [
                 // Kategori seçimi
                 const Text('Kategori'),
+                const SizedBox(height: 10), // 10 piksel boşluk
+                
                 Wrap(
                   spacing: 8,
+                  
                   children:
                       categories.map((cat) {
                         final isSelected = selectedCategory == cat;
@@ -84,7 +87,7 @@ class _FilterScreenState extends State<FilterScreen> {
                         );
                       }).toList(),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
 
                 // Tarih seçimi
                 ListTile(
@@ -126,9 +129,12 @@ class _FilterScreenState extends State<FilterScreen> {
                   ),
                 ),
                 const Divider(),
+                const SizedBox(height: 10),
 
                 // Kişi sayısı aralığı
                 const Text('Kişi Sayısı Aralığı'),
+                
+                const SizedBox(height: 2), 
                 RangeSlider(
                   values: attendeesRange,
                   min: 1,
@@ -147,7 +153,10 @@ class _FilterScreenState extends State<FilterScreen> {
                 const Divider(),
 
                 // Cinsiyet filtresi
+               const SizedBox(height: 10),
+
                 const Text('Katılımcı Cinsiyeti'),
+                const SizedBox(height: 10), 
                 Wrap(
                   spacing: 8,
                   children:
@@ -170,7 +179,12 @@ class _FilterScreenState extends State<FilterScreen> {
 
           // En alttaki sarı buton
           Padding(
-            padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.only(
+              top: 8,
+              bottom: 60,
+              left: 16,
+              right: 16,
+            ), // üst padding azaldı
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -185,6 +199,7 @@ class _FilterScreenState extends State<FilterScreen> {
                     color: Color.fromARGB(255, 53, 0, 71),
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
+                    
                   ),
                 ),
               ),
