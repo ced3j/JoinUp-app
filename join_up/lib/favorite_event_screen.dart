@@ -1,8 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'event_screen.dart';
 
 class FavoritesPage extends StatefulWidget {
-  final Set<String> favorites; // favori etkinliklerin id'lerini tutuyoruz
-  final Function(String) toggleFavori; // eventId parametresini alacak
+  final Set<String> favorites; // Etkinlik ID’leri
+  final Function(String) toggleFavori;
 
   const FavoritesPage({
     super.key,
@@ -15,9 +18,35 @@ class FavoritesPage extends StatefulWidget {
 }
 
 class _FavorilerSayfasiState extends State<FavoritesPage> {
+  late Future<List<Map<String, dynamic>>> _favoriEtkinlikler;
+
+  @override
+  void initState() {
+    super.initState();
+    _favoriEtkinlikler = _getFavoriteEventDetails();
+  }
+
+  Future<List<Map<String, dynamic>>> _getFavoriteEventDetails() async {
+    final firestore = FirebaseFirestore.instance;
+    List<Map<String, dynamic>> etkinlikler = [];
+
+    for (String eventId in widget.favorites) {
+      DocumentSnapshot doc =
+          await firestore.collection('events').doc(eventId).get();
+
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        data['id'] = eventId; // ID’yi de ekle
+        etkinlikler.add(data);
+      }
+    }
+
+    return etkinlikler;
+  }
+
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF6F2DBD); // Mor ton
+    const Color primaryColor = Color(0xFF6F2DBD);
 
     return Scaffold(
       appBar: AppBar(
@@ -25,27 +54,81 @@ class _FavorilerSayfasiState extends State<FavoritesPage> {
           'Favori Etkinlikler',
           style: TextStyle(color: Colors.white),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: primaryColor,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: ListView(
-        children:
-            widget.favorites.map((eventId) {
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _favoriEtkinlikler,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("Favori etkinlik bulunamadı."));
+          }
+
+          final etkinlikler = snapshot.data!;
+
+          return ListView.builder(
+            itemCount: etkinlikler.length,
+            itemBuilder: (context, index) {
+              final event = etkinlikler[index];
+              final eventId = event['id'];
+              final title = event['title'] ?? 'Başlıksız';
+              final description = event['description'] ?? 'Açıklama yok';
+
               return Card(
                 child: ListTile(
-                  leading: Icon(Icons.star, color: Colors.amber),
-                  title: Text("Etkinlik Başlığı $eventId"),
-                  subtitle: Text("Açıklama $eventId"),
+                  leading: const Icon(Icons.star, color: Colors.amber),
+                  title: Text(title),
+                  subtitle: Text(description),
                   trailing: IconButton(
                     icon: const Icon(Icons.remove_circle, color: Colors.red),
                     onPressed: () {
-                      widget.toggleFavori(eventId); // Favoriden çıkar
-                      setState(() {});
+                      widget.toggleFavori(eventId);
+                      setState(() {
+                        _favoriEtkinlikler = _getFavoriteEventDetails();
+                      });
                     },
                   ),
+                  onTap: () async {
+                    final currentUser = FirebaseAuth.instance.currentUser;
+                    if (currentUser == null) return;
+
+                    final attendeeSnapshot =
+                        await FirebaseFirestore.instance
+                            .collection('events')
+                            .doc(eventId)
+                            .collection('attendees')
+                            .where('userId', isEqualTo: currentUser.uid)
+                            .limit(1)
+                            .get();
+
+                    if (attendeeSnapshot.docs.isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (_) => ChatScreen(
+                                eventId: eventId,
+                                eventName: title,
+                              ),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Bu etkinliğin katılımcısı değilsiniz."),
+                        ),
+                      );
+                    }
+                  },
                 ),
               );
-            }).toList(),
+            },
+          );
+        },
       ),
     );
   }
