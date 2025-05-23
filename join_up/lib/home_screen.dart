@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart'; // For DateFormat
 import 'package:join_up/Notifications_screen.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:join_up/favorite_event_screen.dart';
-import 'package:join_up/createEvent_screen.dart'; // Etkinlik oluşturma sayfasının importu
-import 'package:join_up/profile_screen.dart'; // Profil sayfasının importu
+import 'package:join_up/createEvent_screen.dart';
+import 'package:join_up/profile_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:join_up/filter_screen.dart';
+import 'package:join_up/filter_screen.dart'; // Assuming this import is correct
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,9 +18,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   TextEditingController searchController = TextEditingController();
-final Set<String> favoriEvents = {};
- // Favori etkinliklerin ID'lerini tutuyoruz
-@override
+  final Set<String> favoriEvents = {};
+
+  @override
   void initState() {
     super.initState();
     _loadFavoritesFromFirestore();
@@ -29,22 +30,26 @@ final Set<String> favoriEvents = {};
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final snapshot =
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('favorites')
-            .get();
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .collection('favorites')
+              .get();
 
-    setState(() {
-      favoriEvents.clear();
-      favoriEvents.addAll(snapshot.docs.map((doc) => doc.id));
-    });
+      if (mounted) {
+        setState(() {
+          favoriEvents.clear();
+          favoriEvents.addAll(snapshot.docs.map((doc) => doc.id));
+        });
+      }
+    } catch (e) {
+      print("Error loading favorites: $e");
+      // Optionally show a snackbar to the user
+    }
   }
 
-
-
-  // Favori ekleme/çıkarma fonksiyonu
   Future<void> toggleFavori(String eventId) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -55,20 +60,31 @@ final Set<String> favoriEvents = {};
         .collection('favorites')
         .doc(eventId);
 
-    final doc = await favRef.get();
+    try {
+      final doc = await favRef.get();
 
-    if (doc.exists) {
-      await favRef.delete();
-      setState(() {
-        favoriEvents.remove(eventId);
-      });
-    } else {
-      await favRef.set({'timestamp': FieldValue.serverTimestamp()});
-      setState(() {
-        favoriEvents.add(eventId);
-      });
+      if (doc.exists) {
+        await favRef.delete();
+        if (mounted) {
+          setState(() {
+            favoriEvents.remove(eventId);
+          });
+        }
+      } else {
+        await favRef.set({'timestamp': FieldValue.serverTimestamp()});
+        if (mounted) {
+          setState(() {
+            favoriEvents.add(eventId);
+          });
+        }
+      }
+    } catch (e) {
+      print("Error toggling favorite: $e");
+      // Optionally show a snackbar
     }
   }
+
+  // The function for incrementing participant count on approval has been removed as it was unused.
 
   @override
   void dispose() {
@@ -81,6 +97,8 @@ final Set<String> favoriEvents = {};
     String eventId,
     String eventTitle,
     String creatorId,
+    int currentParticipants,
+    int maxParticipants,
   ) {
     final currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
@@ -97,11 +115,10 @@ final Set<String> favoriEvents = {};
           ),
           child: Container(
             padding: const EdgeInsets.all(16),
-            height:
-                MediaQuery.of(context).size.height *
-                0.65, // %65 ekran yüksekliği
+            height: MediaQuery.of(context).size.height * 0.45,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Center(
                   child: Container(
@@ -122,7 +139,15 @@ final Set<String> favoriEvents = {};
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Text("Katılım için isteğini onaylaması gerekiyor."),
+                Text(
+                  "Katılım için etkinlik sahibinin onaylaması gerekiyor.",
+                  style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Mevcut Katılımcı: $currentParticipants/$maxParticipants",
+                  style: const TextStyle(fontSize: 15),
+                ),
                 const Spacer(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -137,34 +162,89 @@ final Set<String> favoriEvents = {};
                         foregroundColor: Colors.white,
                       ),
                       onPressed:
-                          currentUserId == creatorId
+                          currentUserId == creatorId ||
+                                  (maxParticipants > 0 &&
+                                      currentParticipants >= maxParticipants)
                               ? null
                               : () async {
-                                final joinRequestRef = FirebaseFirestore
-                                    .instance
-                                    .collection('events')
-                                    .doc(eventId)
-                                    .collection('joinRequests');
+                                try {
+                                  final joinRequestRef = FirebaseFirestore
+                                      .instance
+                                      .collection('events')
+                                      .doc(eventId)
+                                      .collection('joinRequests');
 
-                                // Daha önce istek gönderilmiş mi kontrolü
-                                final existingRequest =
-                                    await joinRequestRef
-                                        .where(
-                                          'userId',
-                                          isEqualTo: currentUserId,
-                                        )
-                                        .limit(1)
-                                        .get();
+                                  final existingRequest =
+                                      await joinRequestRef
+                                          .where(
+                                            'userId',
+                                            isEqualTo: currentUserId,
+                                          )
+                                          .limit(1)
+                                          .get();
 
-                                if (existingRequest.docs.isNotEmpty) {
-                                  // Zaten istek varsa AlertDialog göster
+                                  if (existingRequest.docs.isNotEmpty) {
+                                    if (!context.mounted) return;
+                                    Navigator.pop(context);
+                                    showDialog(
+                                      context: context,
+                                      builder:
+                                          (context) => AlertDialog(
+                                            title: const Text("Uyarı"),
+                                            content: const Text(
+                                              "Bu etkinliğe daha önce istek gönderdiniz veya zaten katılımcısınız.",
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed:
+                                                    () =>
+                                                        Navigator.pop(context),
+                                                child: const Text("Tamam"),
+                                              ),
+                                            ],
+                                          ),
+                                    );
+                                    return;
+                                  }
+
+                                  await joinRequestRef.add({
+                                    'userId': currentUserId,
+                                    'status': 'pending',
+                                    'createdAt': FieldValue.serverTimestamp(),
+                                  });
+
+                                  await FirebaseFirestore.instance
+                                      .collection('users')
+                                      .doc(creatorId)
+                                      .collection('notifications')
+                                      .add({
+                                        'type':
+                                            'join_request', // Bu tip bildirimleri NotificationsPage'de filtreleyebilirsiniz
+                                        'message':
+                                            '${FirebaseAuth.instance.currentUser?.displayName ?? 'Bir kullanıcı'} "${eventTitle}" etkinliğinize katılmak için istek gönderdi.',
+                                        'eventId': eventId,
+                                        'eventTitle':
+                                            eventTitle, // İstek bildiriminde eventTitle da olsun
+                                        'senderId': currentUserId,
+                                        'requestId':
+                                            joinRequestRef
+                                                .doc()
+                                                .id, // Oluşturulan isteğin ID'si (opsiyonel, eğer gerekiyorsa)
+                                        'timestamp':
+                                            FieldValue.serverTimestamp(), // 'createdAt' yerine 'timestamp' kullanıyorsanız
+                                        'read': false,
+                                      });
+
+                                  if (!context.mounted) return;
+                                  Navigator.pop(context);
+
                                   showDialog(
                                     context: context,
                                     builder:
                                         (context) => AlertDialog(
-                                          title: const Text("Uyarı"),
+                                          title: const Text("Başarılı"),
                                           content: const Text(
-                                            "Bu etkinliğe daha önce istek gönderdiniz.",
+                                            "Katılım isteğiniz gönderildi. Etkinlik sahibi onayladığında haberdar edileceksiniz.",
                                           ),
                                           actions: [
                                             TextButton(
@@ -175,50 +255,19 @@ final Set<String> favoriEvents = {};
                                           ],
                                         ),
                                   );
-                                  return;
-                                }
-
-                                // İstek gönderiliyor
-                                await joinRequestRef.add({
-                                  'userId': currentUserId,
-                                  'status': 'pending',
-                                  'createdAt': FieldValue.serverTimestamp(),
-                                });
-
-                                // Bildirim gönderiliyor
-                                await FirebaseFirestore.instance
-                                    .collection('users')
-                                    .doc(creatorId)
-                                    .collection('notifications')
-                                    .add({
-                                      'type': 'join_request',
-                                      'message':
-                                          '$currentUserId etkinliğinize katılmak için istek gönderdi.',
-                                      'eventId': eventId,
-                                      'createdAt': FieldValue.serverTimestamp(),
-                                    });
-
-                                // Popup'ı kapat
-                                Navigator.pop(context);
-
-                                // Başarılı AlertDialog göster
-                                showDialog(
-                                  context: context,
-                                  builder:
-                                      (context) => AlertDialog(
-                                        title: const Text("Başarılı"),
-                                        content: const Text(
-                                          "İstek gönderildi.",
+                                } catch (e) {
+                                  print("Error sending join request: $e");
+                                  if (context.mounted) {
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          "İstek gönderilirken bir hata oluştu: ${e.toString()}",
                                         ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed:
-                                                () => Navigator.pop(context),
-                                            child: const Text("Tamam"),
-                                          ),
-                                        ],
                                       ),
-                                );
+                                    );
+                                  }
+                                }
                               },
                       child: const Text("İstek Gönder"),
                     ),
@@ -234,8 +283,7 @@ final Set<String> favoriEvents = {};
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF6F2DBD); // Mor ton
-    // const Color darkColor = Color(0xFF0E1116); // darkColor kullanılmadığı için kaldırıldı.
+    const Color primaryColor = Color(0xFF6F2DBD);
 
     return Scaffold(
       appBar: AppBar(
@@ -243,7 +291,7 @@ final Set<String> favoriEvents = {};
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: primaryColor,
         actions: [
-IconButton(
+          IconButton(
             icon: const Icon(Icons.star),
             onPressed: () {
               Navigator.push(
@@ -260,15 +308,13 @@ IconButton(
               });
             },
           ),
-
           IconButton(
             icon: const Icon(Icons.notifications),
             onPressed: () {
-              //bildirimler sayfasına git
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const NotificationsPage(),
+                  builder: (context) => NotificationsPage(), // Removed const
                 ),
               );
             },
@@ -284,7 +330,6 @@ IconButton(
             ),
             child: Row(
               children: [
-                // Filtre butonu
                 Container(
                   margin: const EdgeInsets.only(right: 8.0),
                   child: IconButton(
@@ -296,7 +341,6 @@ IconButton(
                               (context) => FilterScreen(
                                 onApplyFilters: (selectedFilters) {
                                   print("Seçilen filtreler: $selectedFilters");
-                                  // Burada filtrelere göre listeyi yenile veya sorgu yap
                                 },
                               ),
                         ),
@@ -311,8 +355,6 @@ IconButton(
                     ),
                   ),
                 ),
-
-                // Arama çubuğu
                 Expanded(
                   child: TextField(
                     controller: searchController,
@@ -320,7 +362,7 @@ IconButton(
                       hintText: "Etkinlik Ara...",
                       hintStyle: TextStyle(
                         color: Colors.black.withOpacity(0.5),
-                      ), // darkColor yerine doğrudan Colors.black kullandım
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -334,19 +376,15 @@ IconButton(
                     ),
                     style: const TextStyle(color: Colors.black),
                     onChanged: (value) {
-                      setState(() {});
+                      if (mounted) setState(() {});
                     },
                   ),
                 ),
-
-                // Arama ikonu
                 Container(
                   margin: const EdgeInsets.only(left: 8.0),
                   child: IconButton(
                     onPressed: () {
-                      print(
-                        'Arama butonuna tıklandı: ${searchController.text}',
-                      );
+                      print('Arama butonu tıklandı: ${searchController.text}');
                     },
                     icon: const Icon(Icons.search, color: Colors.white),
                     style: IconButton.styleFrom(
@@ -360,68 +398,167 @@ IconButton(
               ],
             ),
           ),
-
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream:
-                  FirebaseFirestore.instance.collection('events').snapshots(),
+                  FirebaseFirestore.instance
+                      .collection('events')
+                      .orderBy('createdAt', descending: true)
+                      .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text("Bir hata oluştu: ${snapshot.error}"),
+                  );
+                }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  // Added waiting state
                   return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  // Combined checks
+                  return const Center(
+                    child: Text("Gösterilecek etkinlik bulunamadı."),
+                  );
                 }
 
                 var events = snapshot.data!.docs;
                 final searchText = searchController.text.toLowerCase();
                 if (searchText.isNotEmpty) {
-                  events = events.where((event) {
-                     final title = (event['title'] ?? '').toString().toLowerCase();
-                     return title.contains(searchText);
-                     }).toList();
+                  events =
+                      events.where((event) {
+                        final Map<String, dynamic>? data =
+                            event.data() as Map<String, dynamic>?;
+                        final title =
+                            (data?['title'] as String? ?? '').toLowerCase();
+                        return title.contains(searchText);
+                      }).toList();
+                  if (events.isEmpty) {
+                    // Check after filtering
+                    return Center(
+                      child: Text(
+                        "Aramanızla eşleşen etkinlik bulunamadı: \"$searchText\"",
+                      ),
+                    );
+                  }
                 }
-                
-             
+
                 return ListView.builder(
                   itemCount: events.length,
                   itemBuilder: (context, index) {
                     var event = events[index];
                     var eventId = event.id;
-                    final eventTitle = event['title'];
-                    final creatorId = event['creatorId'];
-                    bool favorideMi = favoriEvents.contains(event.id);
 
+                    final Map<String, dynamic>? data =
+                        event.data() as Map<String, dynamic>?;
+
+                    final String eventTitle =
+                        data?['title'] as String? ?? 'Başlık Yok';
+                    final String creatorId =
+                        data?['creatorId'] as String? ?? '';
+                    bool favorideMi = favoriEvents.contains(eventId);
+
+                    final int maxParticipants =
+                        (data?['maxParticipants'] as num?)?.toInt() ?? 0;
+                    final int currentParticipants =
+                        (data?['currentParticipants'] as num?)?.toInt() ?? 0;
+
+                    final String eventType =
+                        data?['eventType'] as String? ?? 'Diğer';
+                    final String eventDateString =
+                        data?['eventDate'] as String? ?? '';
+
+                    String formattedDate = 'Tarih Belirtilmemiş';
+                    if (eventDateString.isNotEmpty) {
+                      try {
+                        formattedDate = DateFormat(
+                          'dd/MM/yyyy',
+                        ).format(DateTime.parse(eventDateString));
+                      } catch (e) {
+                        print(
+                          "Date parsing error for event $eventId (date: '$eventDateString'): $e",
+                        );
+                      }
+                    }
 
                     String locationText = 'Konum Bilgisi Yok';
-                    final dynamic locationData =
-                        event['location']; // dynamic olarak okuyalım
+                    final String? locationName =
+                        data?['locationName'] as String?;
+                    final GeoPoint? locationGeoPoint =
+                        data?['location'] as GeoPoint?;
 
-                    // Konum verisinin tipini kontrol et
-                    if (locationData is GeoPoint) {
-                      // Eğer GeoPoint ise, enlem ve boylamı al
+                    if (locationName != null && locationName.isNotEmpty) {
+                      locationText = locationName;
+                    } else if (locationGeoPoint != null) {
                       locationText =
-                          'Enlem: ${locationData.latitude.toStringAsFixed(4)}, Boylam: ${locationData.longitude.toStringAsFixed(4)}';
-                    } else if (locationData is String &&
-                        locationData.isNotEmpty) {
-                      // Eğer String ise, doğrudan kullan
-                      locationText = 'Konum: $locationData';
+                          'Enlem: ${locationGeoPoint.latitude.toStringAsFixed(2)}, Boylam: ${locationGeoPoint.longitude.toStringAsFixed(2)}';
                     }
-                    // Eğer null veya başka bir tipte ise varsayılan 'Konum Bilgisi Yok' kalır.
 
                     return Card(
-                      margin: const EdgeInsets.all(8.0),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 8.0,
+                        vertical: 4.0,
+                      ), // Adjusted margin
+                      elevation: 2.0, // Added some elevation
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ), // Rounded corners
                       child: ListTile(
-                        leading: const Icon(LucideIcons.calendar),
-                        title: Text(eventTitle),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(event['description']),
-                            Text('Konum: $locationText'),
-                          ],
+                        contentPadding: const EdgeInsets.all(
+                          12.0,
+                        ), // Adjusted padding
+                        leading: Icon(
+                          LucideIcons.calendarHeart,
+                          color: primaryColor,
+                          size: 30,
+                        ), // Changed icon and style
+                        title: Text(
+                          eventTitle,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        subtitle: Padding(
+                          // Added padding for subtitle
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Tarih: $formattedDate',
+                                style: TextStyle(color: Colors.grey[700]),
+                              ),
+                              Text(
+                                'Konum: $locationText',
+                                style: TextStyle(color: Colors.grey[700]),
+                              ),
+                              Text(
+                                'Tür: $eventType',
+                                style: TextStyle(color: Colors.grey[700]),
+                              ),
+                              Text(
+                                'Katılımcılar: $currentParticipants / $maxParticipants',
+                                style: TextStyle(
+                                  color:
+                                      (maxParticipants > 0 &&
+                                              currentParticipants >=
+                                                  maxParticipants)
+                                          ? Colors.red
+                                          : Colors.grey[700],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         trailing: IconButton(
                           icon: Icon(
-                            favorideMi ? LucideIcons.star : LucideIcons.starOff,
-                            color: favorideMi ? Colors.amber : Colors.grey,
+                            favorideMi
+                                ? Icons
+                                    .star_rounded // Changed icon
+                                : Icons.star_border_rounded, // Changed icon
+                            color: favorideMi ? Colors.amber[600] : Colors.grey,
+                            size: 28,
                           ),
                           onPressed: () {
                             toggleFavori(eventId);
@@ -433,6 +570,8 @@ IconButton(
                             eventId,
                             eventTitle,
                             creatorId,
+                            currentParticipants,
+                            maxParticipants,
                           );
                         },
                       ),
@@ -444,21 +583,26 @@ IconButton(
           ),
         ],
       ),
-
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
         onTap: (index) {
+          if (index == 0 && ModalRoute.of(context)?.settings.name == '/') {
+            return;
+          }
           switch (index) {
-            case 0: // Ana Sayfa
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const HomePage()),
-              );
+            case 0:
+              if (ModalRoute.of(context)?.settings.name != '/') {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                  (Route<dynamic> route) => false,
+                );
+              }
               break;
-            case 1: // Etkinlik Oluştur
+            case 1:
               final currentUser = FirebaseAuth.instance.currentUser;
               if (currentUser != null) {
-                Navigator.pushReplacement(
+                Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder:
@@ -475,7 +619,7 @@ IconButton(
                 );
               }
               break;
-            case 2: // Profil
+            case 2:
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ProfilePage()),
@@ -484,13 +628,25 @@ IconButton(
           }
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Ana Sayfa'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.add),
+            icon: Icon(Icons.home_filled),
+            label: 'Ana Sayfa',
+          ), // Changed icon
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add_circle_outline_rounded), // Changed icon
             label: 'Etkinlik Oluştur',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline_rounded),
+            label: 'Profil',
+          ), // Changed icon
         ],
+        selectedItemColor: primaryColor,
+        unselectedItemColor:
+            Colors.grey[600], // Slightly darker unselected color
+        type: BottomNavigationBarType.fixed, // Ensures all labels are visible
+        backgroundColor: Colors.white, // Added background color
+        elevation: 8.0, // Added elevation
       ),
     );
   }
