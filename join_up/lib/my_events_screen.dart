@@ -16,14 +16,37 @@ class EventService {
 
     return snapshot.docs.map((doc) {
       final data = doc.data();
+
+      DateTime duration;
+      final rawDuration = data['duration'];
+
+      if (rawDuration is Timestamp) {
+        duration = rawDuration.toDate();
+      } else if (rawDuration is String) {
+        duration = DateTime.tryParse(rawDuration) ?? DateTime.now();
+      } else {
+        duration = DateTime.now();
+      }
+
+      // GeoPoint ise stringe çevir
+      String location = '';
+      if (data['location'] != null) {
+        final loc = data['location'];
+        if (loc is GeoPoint) {
+          location = '${loc.latitude}, ${loc.longitude}';
+        } else if (loc is String) {
+          location = loc;
+        }
+      }
+
       return Event(
         eventId: doc.id,
-        title: data['title'],
-        location: data['location'],
-        description: data['description'],
-        gender: data['gender'],
-        duration: DateTime.parse(data['duration']),
-        creatorId: data['creatorId'],
+        title: data['title'] ?? '',
+        location: location,
+        description: data['description'] ?? '',
+        gender: data['gender'] ?? '',
+        duration: duration,
+        creatorId: data['creatorId'] ?? '',
       );
     }).toList();
   }
@@ -39,13 +62,28 @@ class EventService {
 
     return snap.docs.map((doc) {
       final d = doc.data();
+
+      final joinedAt = d['joinedAt'];
+      DateTime duration =
+          joinedAt is Timestamp ? joinedAt.toDate() : DateTime.now();
+
+      String location = '';
+      if (d['eventLocation'] != null) {
+        final loc = d['eventLocation'];
+        if (loc is GeoPoint) {
+          location = '${loc.latitude}, ${loc.longitude}';
+        } else if (loc is String) {
+          location = loc;
+        }
+      }
+
       return Event(
-        eventId: doc.id,
-        title: d['eventTitle'],
-        location: d['eventLocation'],
+        eventId: d['eventId'] ?? '',
+        title: d['eventTitle'] ?? '',
+        location: location,
         description: '',
         gender: '',
-        duration: d['joinedAt'].toDate(),
+        duration: duration,
         creatorId: '',
       );
     }).toList();
@@ -58,7 +96,7 @@ class EventService {
 }
 
 class Event {
-  final String eventId; // 👈 yeni alan
+  final String eventId;
   final String title;
   final String location;
   final String description;
@@ -109,7 +147,6 @@ class _MyEventsPageState extends State<MyEventsPage>
   Future<List<Event>> _getAttendedEvents() async =>
       _eventService.getAttendedEvents(widget.userId);
 
-  // 👇 Kart widget’ı
   Widget _eventTile(Event e, {required bool canDelete}) {
     final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
     return ListTile(
@@ -153,6 +190,13 @@ class _MyEventsPageState extends State<MyEventsPage>
         ],
       ),
       onTap: () {
+        if (e.eventId.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Etkinlik bilgisi bulunamadı")),
+          );
+          return;
+        }
+
         Navigator.push(
           context,
           MaterialPageRoute(
