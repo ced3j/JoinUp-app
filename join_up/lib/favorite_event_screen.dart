@@ -4,14 +4,16 @@ import 'package:flutter/material.dart';
 import 'event_screen.dart';
 
 class FavoritesPage extends StatefulWidget {
-  final Set<String> favorites; // Etkinlik ID’leri
+  final Set<String> favorites;
   final Function(String) toggleFavori;
 
   const FavoritesPage({
-    super.key,
+    Key? key,
     required this.favorites,
     required this.toggleFavori,
-  });
+  }) : super(key: key);
+  
+  
 
   @override
   _FavorilerSayfasiState createState() => _FavorilerSayfasiState();
@@ -26,17 +28,49 @@ class _FavorilerSayfasiState extends State<FavoritesPage> {
     _favoriEtkinlikler = _getFavoriteEventDetails();
   }
 
+  Future<void> toggleFavori(String eventId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final favRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .doc(eventId);
+
+    final doc = await favRef.get();
+
+    if (doc.exists) {
+      await favRef.delete(); // Favoriden çıkar
+    } else {
+      await favRef.set({
+        'timestamp': FieldValue.serverTimestamp(),
+      }); // Favoriye ekle
+    }
+  }
+
   Future<List<Map<String, dynamic>>> _getFavoriteEventDetails() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return [];
+
     final firestore = FirebaseFirestore.instance;
+    final favSnapshot =
+        await firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('favorites')
+            .get();
+
     List<Map<String, dynamic>> etkinlikler = [];
 
-    for (String eventId in widget.favorites) {
-      DocumentSnapshot doc =
+    for (var doc in favSnapshot.docs) {
+      String eventId = doc.id;
+      DocumentSnapshot eventDoc =
           await firestore.collection('events').doc(eventId).get();
 
-      if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>;
-        data['id'] = eventId; // ID’yi de ekle
+      if (eventDoc.exists) {
+        final data = eventDoc.data() as Map<String, dynamic>;
+        data['id'] = eventId;
         etkinlikler.add(data);
       }
     }
@@ -85,8 +119,8 @@ class _FavorilerSayfasiState extends State<FavoritesPage> {
                   subtitle: Text(description),
                   trailing: IconButton(
                     icon: const Icon(Icons.remove_circle, color: Colors.red),
-                    onPressed: () {
-                      widget.toggleFavori(eventId);
+                    onPressed: () async {
+                      await toggleFavori(eventId);
                       setState(() {
                         _favoriEtkinlikler = _getFavoriteEventDetails();
                       });
@@ -119,7 +153,9 @@ class _FavorilerSayfasiState extends State<FavoritesPage> {
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text("Bu etkinliğin katılımcısı değilsiniz."),
+                          content: Text(
+                            "Bu etkinliğin katılımcısı değilsiniz.",
+                          ),
                         ),
                       );
                     }

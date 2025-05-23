@@ -87,7 +87,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         'title': _titleController.text,
         'description': _descriptionController.text,
         'gender': _selectedGender,
-        'duration': _selectedDate!.toIso8601String(),
+        'duration': FieldValue.serverTimestamp(),
         'creatorId': widget.userId,
         'createdAt': FieldValue.serverTimestamp(),
         'location': GeoPoint(

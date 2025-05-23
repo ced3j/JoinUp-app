@@ -141,9 +141,24 @@ class NotificationsPage extends StatelessWidget {
                                       return Card(
                                         child: ListTile(
                                           title: Text("Etkinlik: $eventTitle"),
-                                          subtitle: Text(
-                                            "İstek gönderen: ${requestDoc['userId']}",
-                                          ),
+subtitle: FutureBuilder<DocumentSnapshot>(
+  future: FirebaseFirestore.instance
+      .collection('users')
+      .doc(requestDoc['userId'])
+      .get(),
+  builder: (context, userSnapshot) {
+    if (userSnapshot.connectionState == ConnectionState.waiting) {
+      return const SizedBox.shrink(); // yüklenirken boş gösterir
+    }
+    if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+      return const Text("İstek gönderen: Bilinmiyor");
+    }
+    final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+    final fullName = userData['fullName'] ?? "Ad Soyad";
+    return Text("İstek gönderen: $fullName");
+  },
+),
+
                                           trailing: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
@@ -153,6 +168,7 @@ class NotificationsPage extends StatelessWidget {
                                                   color: Colors.green,
                                                 ),
                                                 onPressed: () async {
+                                                  // Onaylama işlemleri (senin mevcut kodun)
                                                   await requestDoc.reference
                                                       .update({
                                                         'status': 'approved',
@@ -178,6 +194,7 @@ class NotificationsPage extends StatelessWidget {
                                                         'attendedEvents',
                                                       )
                                                       .add({
+                                                        'eventId':eventDoc.id, // 🔧 EKLENDİ
                                                         'eventTitle':
                                                             eventTitle,
                                                         'eventLocation':
@@ -229,6 +246,7 @@ class NotificationsPage extends StatelessWidget {
                                           ),
                                         ),
                                       );
+
                                     }).toList(),
                               );
                             },

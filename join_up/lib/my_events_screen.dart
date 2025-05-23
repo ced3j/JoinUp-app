@@ -90,9 +90,72 @@ class EventService {
   }
 
   // Etkinliği sil
-  Future<void> deleteEvent(String eventId) async {
-    await _firestore.collection('events').doc(eventId).delete();
+Future<void> deleteEvent(String eventId) async {
+    final firestore = FirebaseFirestore.instance;
+
+    // 1. Etkinliğe ait tüm chat mesajlarını sil
+    final messagesSnapshot =
+        await firestore
+            .collection('events')
+            .doc(eventId)
+            .collection('messages')
+            .get();
+
+    for (var msgDoc in messagesSnapshot.docs) {
+      await msgDoc.reference.delete();
+    }
+
+    // 2. Etkinliğe ait katılım isteklerini sil
+    final joinRequestsSnapshot =
+        await firestore
+            .collection('events')
+            .doc(eventId)
+            .collection('joinRequests')
+            .get();
+
+    for (var reqDoc in joinRequestsSnapshot.docs) {
+      await reqDoc.reference.delete();
+    }
+
+    // 3. Etkinliğe ait katılımcıları sil
+    final attendeesSnapshot =
+        await firestore
+            .collection('events')
+            .doc(eventId)
+            .collection('attendees')
+            .get();
+
+    for (var attendeeDoc in attendeesSnapshot.docs) {
+      await attendeeDoc.reference.delete();
+    }
+
+    // 4. Etkinliği sil
+    await firestore.collection('events').doc(eventId).delete();
+
+    // 5. Tüm kullanıcılar üzerinde döngü yap ve katıldıklarım ile bildirimleri sil
+    final usersSnapshot = await firestore.collection('users').get();
+
+    for (var userDoc in usersSnapshot.docs) {
+      // Katıldıklarım sil
+      final attendedEventsRef = userDoc.reference.collection('attendedEvents');
+      final attendedEventsSnapshot =
+          await attendedEventsRef.where('eventId', isEqualTo: eventId).get();
+
+      for (var doc in attendedEventsSnapshot.docs) {
+        await doc.reference.delete();
+      }
+
+      // Bildirimler sil
+      final notificationsRef = userDoc.reference.collection('notifications');
+      final notificationsSnapshot =
+          await notificationsRef.where('eventId', isEqualTo: eventId).get();
+
+      for (var notifDoc in notificationsSnapshot.docs) {
+        await notifDoc.reference.delete();
+      }
+    }
   }
+
 }
 
 class Event {

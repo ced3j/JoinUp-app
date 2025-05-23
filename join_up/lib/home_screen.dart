@@ -6,6 +6,7 @@ import 'package:join_up/favorite_event_screen.dart';
 import 'package:join_up/createEvent_screen.dart'; // Etkinlik oluşturma sayfasının importu
 import 'package:join_up/profile_screen.dart'; // Profil sayfasının importu
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:join_up/filter_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,18 +17,57 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   TextEditingController searchController = TextEditingController();
-  final Set<String> favoriEvents =
-      {}; // Favori etkinliklerin ID'lerini tutuyoruz
+final Set<String> favoriEvents = {};
+ // Favori etkinliklerin ID'lerini tutuyoruz
+@override
+  void initState() {
+    super.initState();
+    _loadFavoritesFromFirestore();
+  }
+
+  Future<void> _loadFavoritesFromFirestore() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final snapshot =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('favorites')
+            .get();
+
+    setState(() {
+      favoriEvents.clear();
+      favoriEvents.addAll(snapshot.docs.map((doc) => doc.id));
+    });
+  }
+
+
 
   // Favori ekleme/çıkarma fonksiyonu
-  void toggleFavori(String eventId) {
-    setState(() {
-      if (favoriEvents.contains(eventId)) {
-        favoriEvents.remove(eventId); // Etkinlik favorilerden çıkar
-      } else {
-        favoriEvents.add(eventId); // Etkinlik favorilere eklenir
-      }
-    });
+  Future<void> toggleFavori(String eventId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final favRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .doc(eventId);
+
+    final doc = await favRef.get();
+
+    if (doc.exists) {
+      await favRef.delete();
+      setState(() {
+        favoriEvents.remove(eventId);
+      });
+    } else {
+      await favRef.set({'timestamp': FieldValue.serverTimestamp()});
+      setState(() {
+        favoriEvents.add(eventId);
+      });
+    }
   }
 
   @override
@@ -203,7 +243,7 @@ class _HomePageState extends State<HomePage> {
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: primaryColor,
         actions: [
-          IconButton(
+IconButton(
             icon: const Icon(Icons.star),
             onPressed: () {
               Navigator.push(
@@ -211,18 +251,16 @@ class _HomePageState extends State<HomePage> {
                 MaterialPageRoute(
                   builder:
                       (context) => FavoritesPage(
-                        favorites: favoriEvents, // Favori etkinliklerin ID'leri
-                        toggleFavori:
-                            toggleFavori, // Favori ekleme/çıkarma fonksiyonu
+                        favorites: favoriEvents,
+                        toggleFavori: toggleFavori,
                       ),
                 ),
               ).then((_) {
-                setState(
-                  () {},
-                ); // Favoriler sayfasından döndüğümüzde listeyi güncelle
+                _loadFavoritesFromFirestore();
               });
             },
           ),
+
           IconButton(
             icon: const Icon(Icons.notifications),
             onPressed: () {
@@ -251,7 +289,18 @@ class _HomePageState extends State<HomePage> {
                   margin: const EdgeInsets.only(right: 8.0),
                   child: IconButton(
                     onPressed: () {
-                      print("Filtre butonuna tıklandı!");
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => FilterScreen(
+                                onApplyFilters: (selectedFilters) {
+                                  print("Seçilen filtreler: $selectedFilters");
+                                  // Burada filtrelere göre listeyi yenile veya sorgu yap
+                                },
+                              ),
+                        ),
+                      );
                     },
                     icon: const Icon(Icons.filter_list, color: Colors.white),
                     style: IconButton.styleFrom(
@@ -322,7 +371,15 @@ class _HomePageState extends State<HomePage> {
                 }
 
                 var events = snapshot.data!.docs;
-
+                final searchText = searchController.text.toLowerCase();
+                if (searchText.isNotEmpty) {
+                  events = events.where((event) {
+                     final title = (event['title'] ?? '').toString().toLowerCase();
+                     return title.contains(searchText);
+                     }).toList();
+                }
+                
+             
                 return ListView.builder(
                   itemCount: events.length,
                   itemBuilder: (context, index) {
@@ -330,7 +387,8 @@ class _HomePageState extends State<HomePage> {
                     var eventId = event.id;
                     final eventTitle = event['title'];
                     final creatorId = event['creatorId'];
-                    var favorideMi = favoriEvents.contains(eventId);
+                    bool favorideMi = favoriEvents.contains(event.id);
+
 
                     String locationText = 'Konum Bilgisi Yok';
                     final dynamic locationData =
