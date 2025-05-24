@@ -26,6 +26,41 @@ class _HomePageState extends State<HomePage> {
     _loadFavoritesFromFirestore();
   }
 
+
+  Color getCardColor(String eventType) {
+    switch (eventType.toLowerCase()) {
+      case 'spor':
+        return Colors.green[50]!;
+      case 'sosyal':
+        return Colors.blue[50]!;
+      case 'eğitim':
+        return Colors.orange[50]!;
+      case 'kitap':
+        return Colors.purple[50]!;
+      case 'eğlence':
+        return Colors.pink[50]!;
+      default:
+        return Colors.grey[100]!;
+    }
+  }
+
+  IconData getEventIcon(String eventType) {
+     switch (eventType.toLowerCase()) {
+      case 'spor':
+        return LucideIcons.dumbbell; // Spor için dambıl ikonu
+      case 'sosyal':
+        return LucideIcons.users; // Sosyal etkinlikler için kullanıcılar grubu
+      case 'eğitim':
+        return LucideIcons.graduationCap; // Eğitim için mezuniyet kepi
+      case 'kitap':
+        return LucideIcons.bookOpen; // Kitap için açık kitap
+      case 'eğlence':
+        return LucideIcons.partyPopper; // Eğlence için konfeti/parti simgesi
+      default:
+        return LucideIcons.calendarHeart; // Varsayılan ikon
+    }
+  }
+
   Future<void> _loadFavoritesFromFirestore() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -494,24 +529,25 @@ class _HomePageState extends State<HomePage> {
                           'Enlem: ${locationGeoPoint.latitude.toStringAsFixed(2)}, Boylam: ${locationGeoPoint.longitude.toStringAsFixed(2)}';
                     }
 
-                    return Card(
+                return Card(
+                      color: getCardColor(
+                        eventType,
+                      ), // Kategoriye göre arka plan rengi
                       margin: const EdgeInsets.symmetric(
                         horizontal: 8.0,
                         vertical: 4.0,
-                      ), // Adjusted margin
-                      elevation: 2.0, // Added some elevation
+                      ),
+                      elevation: 2.0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8.0),
-                      ), // Rounded corners
+                      ),
                       child: ListTile(
-                        contentPadding: const EdgeInsets.all(
-                          12.0,
-                        ), // Adjusted padding
+                        contentPadding: const EdgeInsets.all(12.0),
                         leading: Icon(
-                          LucideIcons.calendarHeart,
+                          getEventIcon(eventType), // Kategoriye göre ikon
                           color: primaryColor,
                           size: 30,
-                        ), // Changed icon and style
+                        ),
                         title: Text(
                           eventTitle,
                           style: const TextStyle(
@@ -520,7 +556,6 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                         subtitle: Padding(
-                          // Added padding for subtitle
                           padding: const EdgeInsets.only(top: 4.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -554,9 +589,8 @@ class _HomePageState extends State<HomePage> {
                         trailing: IconButton(
                           icon: Icon(
                             favorideMi
-                                ? Icons
-                                    .star_rounded // Changed icon
-                                : Icons.star_border_rounded, // Changed icon
+                                ? Icons.star_rounded
+                                : Icons.star_border_rounded,
                             color: favorideMi ? Colors.amber[600] : Colors.grey,
                             size: 28,
                           ),
