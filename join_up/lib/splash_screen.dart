@@ -157,7 +157,7 @@ class _SplashScreenState extends State<SplashScreen>
                     );
                   },
                   child: Text(
-                    'J',
+                    'Join',
                     style: TextStyle(
                       fontSize: 65,
                       fontWeight: FontWeight.bold,
@@ -185,7 +185,7 @@ class _SplashScreenState extends State<SplashScreen>
                   );
                 },
                 child: Text(
-                  'oin Up',
+                  'Up',
                   style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.w600,
