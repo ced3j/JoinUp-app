@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'firebase_options.dart';
-import 'login_screen.dart';
-import 'home_screen.dart';
+import 'package:firebase_core/firebase_core.dart'; // Firebase için eklendi
+import 'firebase_options.dart'; // Firebase için eklendi
+import 'splash_screen.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,9 +22,7 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: keepLoggedIn ? const HomePage() : const LoginPage(),
-      debugShowCheckedModeBanner: false,
-    );
+    return MaterialApp(home: SplashScreen(), debugShowCheckedModeBanner: false);
+
   }
 }
