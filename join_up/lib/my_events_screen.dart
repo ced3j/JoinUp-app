@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'event_screen.dart'; // sohbet ekranını import et
+import 'package:lucide_icons/lucide_icons.dart'; // LucideIcons'ı import ettik
 
 class EventService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -28,26 +29,31 @@ class EventService {
         duration = DateTime.now();
       }
 
-      // GeoPoint ise stringe çevir
-      String location = '';
-      if (data['location'] != null) {
-        final loc = data['location'];
-        if (loc is GeoPoint) {
-          location = '${loc.latitude}, ${loc.longitude}';
-        } else if (loc is String) {
-          location = loc;
-        }
+      // Sadece locationName'i çekiyoruz, GeoPoint'i yok sayıyoruz.
+      String locationText = 'Konum Bilgisi Yok';
+      if (data.containsKey('locationName') &&
+          data['locationName'] is String &&
+          data['locationName'].isNotEmpty) {
+        locationText = data['locationName'];
       }
+
+      // minParticipants, maxParticipants, currentParticipants alanlarını güvenli bir şekilde al
+      final int minParticipants = data['minParticipants'] ?? 0;
+      final int maxParticipants = data['maxParticipants'] ?? 0;
+      final int currentParticipants = data['currentParticipants'] ?? 0;
 
       return Event(
         eventId: doc.id,
         title: data['title'] ?? '',
-        location: location,
+        location: locationText, // Güncellenmiş location
         description: data['description'] ?? '',
         gender: data['gender'] ?? '',
         duration: duration,
         creatorId: data['creatorId'] ?? '',
-        eventType: data['eventType'] ?? '',  // eventType alanı
+        eventType: data['eventType'] ?? '', // eventType alanı
+        minParticipants: minParticipants, // Yeni eklendi
+        maxParticipants: maxParticipants, // Yeni eklendi
+        currentParticipants: currentParticipants, // Yeni eklendi
       );
     }).toList();
   }
@@ -68,25 +74,33 @@ class EventService {
       DateTime duration =
           joinedAt is Timestamp ? joinedAt.toDate() : DateTime.now();
 
-      String location = '';
-      if (d['eventLocation'] != null) {
-        final loc = d['eventLocation'];
-        if (loc is GeoPoint) {
-          location = '${loc.latitude}, ${loc.longitude}';
-        } else if (loc is String) {
-          location = loc;
-        }
+      // Sadece eventLocationName'i çekiyoruz, eventLocation (GeoPoint) yok sayıyoruz.
+      String locationText = 'Konum Bilgisi Yok';
+      if (d.containsKey('eventLocationName') &&
+          d['eventLocationName'] is String &&
+          d['eventLocationName'].isNotEmpty) {
+        locationText = d['eventLocationName'];
       }
+
+      // Katıldığım etkinlikler için bu alanlar users/userId/attendedEvents içinde genellikle olmaz.
+      // Eğer oraya da kaydediyorsan veritabanı yapına göre burayı düzenleyebilirsin.
+      // Şimdilik varsayılan 0 değerlerini atıyoruz.
+      final int minParticipants = d['minParticipants'] ?? 0;
+      final int maxParticipants = d['maxParticipants'] ?? 0;
+      final int currentParticipants = d['currentParticipants'] ?? 0;
 
       return Event(
         eventId: d['eventId'] ?? '',
         title: d['eventTitle'] ?? '',
-        location: location,
-        description: '',
-        gender: '',
+        location: locationText, // Güncellenmiş location
+        description: '', // Katıldığım etkinliklerde bu bilgi genelde tam olmaz
+        gender: '', // Katıldığım etkinliklerde bu bilgi genelde tam olmaz
         duration: duration,
-        creatorId: '',
+        creatorId: '', // Katıldığım etkinliklerde bu bilgi genelde tam olmaz
         eventType: d['eventType'] ?? '',
+        minParticipants: minParticipants, // Yeni eklendi
+        maxParticipants: maxParticipants, // Yeni eklendi
+        currentParticipants: currentParticipants, // Yeni eklendi
       );
     }).toList();
   }
@@ -167,7 +181,10 @@ class Event {
   final String gender;
   final DateTime duration;
   final String creatorId;
-  final String eventType;  // Yeni alan
+  final String eventType;
+  final int minParticipants; // Yeni eklendi
+  final int maxParticipants; // Yeni eklendi
+  final int currentParticipants; // Yeni eklendi
 
   Event({
     required this.eventId,
@@ -177,7 +194,10 @@ class Event {
     required this.gender,
     required this.duration,
     required this.creatorId,
-    required this.eventType,  // Yeni alan
+    required this.eventType,
+    required this.minParticipants,
+    required this.maxParticipants,
+    required this.currentParticipants,
   });
 }
 
@@ -256,9 +276,7 @@ class _MyEventsPageState extends State<MyEventsPage>
     return Card(
       color: bgColor,
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: ListTile(
         leading: Icon(icon, size: 30, color: Colors.deepPurple),
         title: Text(
@@ -268,46 +286,65 @@ class _MyEventsPageState extends State<MyEventsPage>
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(e.location),
+            Text(
+              e.location,
+            ), // Artık sadece locationName'den veya eventLocationName'den gelen değer burada
             Text(dateFormat.format(e.duration)),
           ],
         ),
-        trailing: canDelete
-            ? IconButton(
-                icon: Container(                    
+        trailing:
+            canDelete
+                ? IconButton(
+                  icon: Container(
                     padding: const EdgeInsets.all(8),
                     child: Icon(
-                      Icons.delete,
-                      color: Colors.grey[800],
+                      // Seçenek 1: LucideIcons.trash
+                      LucideIcons.trash, // Tercih ettiğim ikon
+                      color: Colors.red.shade700, // Tercih ettiğim renk
+                      // Diğer seçenekleri denemek istersen yorum satırından çıkarabilirsin:
+                      // Icons.delete,
+                      // Icons.delete_outline,
+                      // Icons.cancel_outlined,
+                      // Icons.remove_circle_outline, // Eski ikona daha yakın ama çerçeveli
+                      // LucideIcons.xCircle, // Daire içinde çarpı
                       size: 22,
                     ),
                   ),
-                onPressed: () async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text("Etkinliği sil"),
-                      content: const Text("Bu etkinliği silmek istediğinize emin misiniz?"),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text("İptal"),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text("Sil"),
-                        ),
-                      ],
-                    ),
-                  );
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder:
+                          (context) => AlertDialog(
+                            title: const Text("Etkinliği sil"),
+                            content: const Text(
+                              "Bu etkinliği silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text("İptal"),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text("Sil"),
+                              ),
+                            ],
+                          ),
+                    );
 
-                  if (confirm == true) {
-                    await _eventService.deleteEvent(e.eventId);
-                    setState(() {}); // listeyi yenile
-                  }
-                },
-              )
-            : null,
+                    if (confirm == true) {
+                      await _eventService.deleteEvent(e.eventId);
+                      setState(() {}); // listeyi yenile
+                      // Kullanıcıya bilgi ver
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Etkinlik başarıyla silindi.'),
+                        ),
+                      );
+                    }
+                  },
+                )
+                : null,
         onTap: () {
           if (e.eventId.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -319,7 +356,8 @@ class _MyEventsPageState extends State<MyEventsPage>
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => ChatScreen(eventName: e.title, eventId: e.eventId),
+              builder:
+                  (_) => ChatScreen(eventName: e.title, eventId: e.eventId),
             ),
           );
         },
@@ -344,7 +382,7 @@ class _MyEventsPageState extends State<MyEventsPage>
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
-          tabs: const [ 
+          tabs: const [
             Tab(text: "Oluşturduklarım"),
             Tab(text: "Katıldıklarım"),
           ],
@@ -353,54 +391,61 @@ class _MyEventsPageState extends State<MyEventsPage>
       body: TabBarView(
         controller: _tabController,
         children: [
-        FutureBuilder<List<Event>>(
-        future: _getCreatedEvents(),
-        builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator());
-        }
-                  if (snapshot.hasError) {
-            return Center(child: Text('Hata: ${snapshot.error}'));
-          }
+          FutureBuilder<List<Event>>(
+            future: _getCreatedEvents(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Hata: ${snapshot.error}'));
+              }
 
-          final events = snapshot.data ?? [];
+              final events = snapshot.data ?? [];
 
-          if (events.isEmpty) {
-            return const Center(child: Text('Oluşturduğun etkinlik bulunmamaktadır.'));
-          }
+              if (events.isEmpty) {
+                return const Center(
+                  child: Text('Oluşturduğun etkinlik bulunmamaktadır.'),
+                );
+              }
 
-          return ListView.builder(
-            itemCount: events.length,
-            itemBuilder: (context, index) => _eventTile(events[index], canDelete: true),
-          );
-        },
+              return ListView.builder(
+                itemCount: events.length,
+                itemBuilder:
+                    (context, index) =>
+                        _eventTile(events[index], canDelete: true),
+              );
+            },
+          ),
+          FutureBuilder<List<Event>>(
+            future: _getAttendedEvents(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (snapshot.hasError) {
+                return Center(child: Text('Hata: ${snapshot.error}'));
+              }
+
+              final events = snapshot.data ?? [];
+
+              if (events.isEmpty) {
+                return const Center(
+                  child: Text('Katıldığın etkinlik bulunmamaktadır.'),
+                );
+              }
+
+              return ListView.builder(
+                itemCount: events.length,
+                itemBuilder:
+                    (context, index) =>
+                        _eventTile(events[index], canDelete: false),
+              );
+            },
+          ),
+        ],
       ),
-      FutureBuilder<List<Event>>(
-        future: _getAttendedEvents(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text('Hata: ${snapshot.error}'));
-          }
-
-          final events = snapshot.data ?? [];
-
-          if (events.isEmpty) {
-            return const Center(child: Text('Katıldığın etkinlik bulunmamaktadır.'));
-          }
-
-          return ListView.builder(
-            itemCount: events.length,
-            itemBuilder: (context, index) => _eventTile(events[index], canDelete: false),
-          );
-        },
-      ),
-    ],
-  ),
-);
+    );
+  }
 }
-}
-          
