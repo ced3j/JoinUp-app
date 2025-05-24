@@ -21,43 +21,7 @@ class ChatScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          Expanded(
-            child: StreamBuilder(
-              stream:
-                  FirebaseFirestore.instance
-                      .collection('chats')
-                      .doc(eventId)
-                      .collection('messages')
-                      .orderBy('createdAt', descending: true)
-                      .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final chatDocs = snapshot.data!.docs;
-
-                return ListView.builder(
-                  reverse: true,
-                  itemCount: chatDocs.length,
-                  itemBuilder:
-                      (ctx, index) => Align(
-                        alignment:
-                            chatDocs[index]['userId'] ==
-                                    FirebaseAuth.instance.currentUser!.uid
-                                ? Alignment.centerRight
-                                : Alignment.centerLeft,
-                        child: ChatBubble(
-                          message: chatDocs[index]['text'],
-                          isMe:
-                              chatDocs[index]['userId'] ==
-                              FirebaseAuth.instance.currentUser!.uid,
-                        ),
-                      ),
-                );
-              },
-            ),
-          ),
+          Expanded(child: ChatMessages(eventId: eventId)),
           MessageInput(eventId: eventId),
         ],
       ),
@@ -65,27 +29,126 @@ class ChatScreen extends StatelessWidget {
   }
 }
 
+class ChatMessages extends StatefulWidget {
+  final String eventId;
+
+  const ChatMessages({super.key, required this.eventId});
+
+  @override
+  State<ChatMessages> createState() => _ChatMessagesState();
+}
+
+class _ChatMessagesState extends State<ChatMessages> {
+  final Map<String, String> _userNamesCache = {};
+
+  Future<String> _getUserName(String userId) async {
+    if (_userNamesCache.containsKey(userId)) {
+      return _userNamesCache[userId]!;
+    }
+
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    final userName = doc.data()?['fullName'] ?? 'Bilinmeyen';
+    _userNamesCache[userId] = userName;
+    return userName;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream:
+          FirebaseFirestore.instance
+              .collection('chats')
+              .doc(widget.eventId)
+              .collection('messages')
+              .orderBy('createdAt', descending: true)
+              .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final chatDocs = snapshot.data!.docs;
+
+        return ListView.builder(
+          reverse: true,
+          itemCount: chatDocs.length,
+          itemBuilder: (ctx, index) {
+            final data = chatDocs[index];
+            final userId = data['userId'];
+            final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+            final isMe = userId == currentUserId;
+
+            return FutureBuilder<String>(
+              future: _getUserName(userId),
+              builder: (context, userSnapshot) {
+                final userName = userSnapshot.data ?? '...';
+                return Align(
+                  alignment:
+                      isMe ? Alignment.centerRight : Alignment.centerLeft,
+                  child: ChatBubble(
+                    message: data['text'],
+                    isMe: isMe,
+                    userName: userName,
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
 class ChatBubble extends StatelessWidget {
   final String message;
   final bool isMe;
+  final String userName;
 
-  const ChatBubble({super.key, required this.message, required this.isMe});
+  const ChatBubble({
+    super.key,
+    required this.message,
+    required this.isMe,
+    required this.userName,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      margin: EdgeInsets.only(left: isMe ? 60 : 10, right: isMe ? 10 : 60),
+      margin: EdgeInsets.only(
+        top: 8,
+        left: isMe ? 60 : 10,
+        right: isMe ? 10 : 60,
+      ),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: isMe ? const Color(0xFF6F2DBD) : Colors.grey[300],
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(
-        message,
-        style: TextStyle(
-          color: isMe ? Colors.white : Colors.black87,
-          fontSize: 16,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isMe)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                userName,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+          Text(
+            message,
+            style: TextStyle(
+              color: isMe ? Colors.white : Colors.black87,
+              fontSize: 16,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -93,6 +156,7 @@ class ChatBubble extends StatelessWidget {
 
 class MessageInput extends StatefulWidget {
   final String eventId;
+
   const MessageInput({super.key, required this.eventId});
 
   @override
