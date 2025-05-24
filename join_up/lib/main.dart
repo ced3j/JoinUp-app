@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'login_screen.dart';
@@ -11,8 +12,9 @@ void main() async {
 
   final prefs = await SharedPreferences.getInstance();
   final keepLoggedIn = prefs.getBool('keepLoggedIn') ?? false;
+  final currentUser = FirebaseAuth.instance.currentUser;
 
-  runApp(MainApp(keepLoggedIn: keepLoggedIn));
+  runApp(MainApp(keepLoggedIn: keepLoggedIn && currentUser != null));
 }
 
 class MainApp extends StatelessWidget {
