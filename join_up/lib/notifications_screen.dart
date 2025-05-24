@@ -40,7 +40,16 @@ class NotificationsPage extends StatelessWidget {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final notifications = notificationSnapshot.data!.docs;
+                final allNotifications = notificationSnapshot.data!.docs;
+
+                // Bildirimler içinde sadece 'joinApproved' tipinde olanları al
+                final notifications =
+                    allNotifications.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>?;
+                      return data != null &&
+                          data.containsKey('type') &&
+                          data['type'] == 'joinApproved';
+                    }).toList();
 
                 if (notifications.isEmpty) {
                   return const Center(
@@ -52,14 +61,15 @@ class NotificationsPage extends StatelessWidget {
                   itemCount: notifications.length,
                   itemBuilder: (context, index) {
                     final notif = notifications[index];
-                    final eventTitle = notif['eventTitle'] ?? "Etkinlik";
+                    final data = notif.data() as Map<String, dynamic>;
+                    final eventTitle = data['eventTitle'] ?? "Etkinlik";
 
                     return ListTile(
                       leading: const Icon(Icons.notifications),
                       title: const Text("Etkinliğe katılım onaylandı"),
                       subtitle: Text("Etkinlik: $eventTitle"),
                       trailing:
-                          notif['read'] == false
+                          data['read'] == false
                               ? const Icon(
                                 Icons.fiber_new,
                                 color: Colors.purple,
@@ -67,9 +77,7 @@ class NotificationsPage extends StatelessWidget {
                               : null,
                       onTap: () async {
                         await notif.reference.update({'read': true});
-                        final data =
-                            notif.data()
-                                as Map<String, dynamic>?; // null olabilir
+                        final data = notif.data() as Map<String, dynamic>?;
                         final eventId = data != null ? data['eventId'] : null;
                         if (eventId != null) {
                           Navigator.push(
@@ -77,7 +85,7 @@ class NotificationsPage extends StatelessWidget {
                             MaterialPageRoute(
                               builder:
                                   (context) => ChatScreen(
-                                    eventId: eventId!,
+                                    eventId: eventId,
                                     eventName: eventTitle,
                                   ),
                             ),
@@ -153,7 +161,7 @@ class NotificationsPage extends StatelessWidget {
                                               if (userSnapshot
                                                       .connectionState ==
                                                   ConnectionState.waiting) {
-                                                return const SizedBox.shrink(); // yüklenirken boş gösterir
+                                                return const SizedBox.shrink();
                                               }
                                               if (!userSnapshot.hasData ||
                                                   !userSnapshot.data!.exists) {
@@ -172,7 +180,6 @@ class NotificationsPage extends StatelessWidget {
                                               );
                                             },
                                           ),
-
                                           trailing: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
@@ -182,7 +189,7 @@ class NotificationsPage extends StatelessWidget {
                                                   color: Colors.green,
                                                 ),
                                                 onPressed: () async {
-                                                  // Onaylama işlemleri (senin mevcut kodun)
+                                                  // Onaylama işlemleri
                                                   await requestDoc.reference
                                                       .update({
                                                         'status': 'approved',
@@ -208,15 +215,47 @@ class NotificationsPage extends StatelessWidget {
                                                         'attendedEvents',
                                                       )
                                                       .add({
-                                                        'eventId':
-                                                            eventDoc
-                                                                .id, // 🔧 EKLENDİ
+                                                        'eventId': eventDoc.id,
                                                         'eventTitle':
                                                             eventTitle,
                                                         'eventLocation':
                                                             eventDoc['location'],
                                                         'joinedAt':
                                                             FieldValue.serverTimestamp(),
+                                                      });
+
+                                                  // currentParticipants değerini artır (atomic)
+                                                  final eventDocRef =
+                                                      FirebaseFirestore.instance
+                                                          .collection('events')
+                                                          .doc(eventDoc.id);
+                                                  await FirebaseFirestore
+                                                      .instance
+                                                      .runTransaction((
+                                                        transaction,
+                                                      ) async {
+                                                        final snapshot =
+                                                            await transaction
+                                                                .get(
+                                                                  eventDocRef,
+                                                                );
+                                                        if (!snapshot.exists) {
+                                                          throw Exception(
+                                                            "Etkinlik bulunamadı",
+                                                          );
+                                                        }
+                                                        final currentCount =
+                                                            snapshot
+                                                                .data()?['currentParticipants'] ??
+                                                            0;
+                                                        transaction.update(
+                                                          eventDocRef,
+                                                          {
+                                                            'currentParticipants':
+                                                                currentCount +
+                                                                1,
+                                                          },
+                                                        );
                                                       });
 
                                                   // Katılımcıya bildirim gönder
@@ -228,6 +267,7 @@ class NotificationsPage extends StatelessWidget {
                                                         'notifications',
                                                       )
                                                       .add({
+                                                        'type': 'joinApproved',
                                                         'eventId': eventDoc.id,
                                                         'eventTitle':
                                                             eventTitle,
