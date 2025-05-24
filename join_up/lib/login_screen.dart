@@ -15,11 +15,23 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final AuthService authService = AuthService();
-
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool obscurePassword = true;
   bool keepMeLoggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    loadLoginPref(); // Otomatik checkbox durumunu yükle
+  }
+
+  void loadLoginPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      keepMeLoggedIn = prefs.getBool('keepLoggedIn') ?? false;
+    });
+  }
 
   void signIn() async {
     String email = emailController.text.trim();
@@ -65,41 +77,54 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 20),
                   buildPasswordField(),
                   const SizedBox(height: 8),
-                  CheckboxListTile(
-                    value: keepMeLoggedIn,
-                    onChanged: (value) {
-                      setState(() {
-                        keepMeLoggedIn = value ?? false;
-                      });
-                    },
-                    title: Text(
-                      "Oturum açık kalsın",
-                      style: GoogleFonts.montserrat(fontSize: 14),
-                    ),
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const ForgotPasswordPage(),
+
+                  // ✅ Oturum açık kalsın ve şifreyi unuttum yan yana
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: keepMeLoggedIn,
+                            onChanged: (value) {
+                              setState(() {
+                                keepMeLoggedIn = value ?? false;
+                              });
+                            },
+                            visualDensity: const VisualDensity(
+                              horizontal: -3,
+                              vertical: -3,
+                            ),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
                           ),
-                        );
-                      },
-                      child: Text(
-                        "Şifremi Unuttum",
-                        style: GoogleFonts.montserrat(
-                          color: const Color(0xFF6F2DBD),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          Text(
+                            "Oturum açık kalsın",
+                            style: GoogleFonts.montserrat(fontSize: 14),
+                          ),
+                        ],
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ForgotPasswordPage(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          "Şifremi Unuttum",
+                          style: GoogleFonts.montserrat(
+                            color: const Color(0xFF6F2DBD),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
+
                   const SizedBox(height: 30),
                   buildLoginButton(),
                   const SizedBox(height: 40),
@@ -173,7 +198,6 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-
   Widget logoField() {
     return Text(
       "JoinUp",

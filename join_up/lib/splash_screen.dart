@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
+import 'package:join_up/home_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -31,6 +33,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+    checkLoginStatus(); // Burada fonksiyonu çağırıyoruz.
 
     _rotationController = AnimationController(
       vsync: this,
@@ -68,7 +71,6 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 1500),
     );
 
-    // Yukarıdan aşağıya düşme animasyonu, başta çok yukarıda (gözükmez)
     _dropAnimationJoinUp = Tween<double>(
       begin: -1000, // ekran dışı çok yukarıda
       end: 0, // final pozisyon (ekran içinde)
@@ -86,7 +88,6 @@ class _SplashScreenState extends State<SplashScreen>
       end: 1.5,
     ).animate(CurvedAnimation(parent: _scaleController, curve: Curves.easeOut));
 
-    // Animasyonları sırayla başlatıyoruz
     Future.delayed(const Duration(milliseconds: 300), () {
       _slideControllerJ.forward();
       _scaleController.forward();
@@ -95,12 +96,25 @@ class _SplashScreenState extends State<SplashScreen>
     Future.delayed(const Duration(milliseconds: 700), () {
       _dropControllerJoinUp.forward();
     });
+  }
 
-    Timer(const Duration(seconds: 4), () {
+  // İşte doğru yerde async fonksiyon:
+  void checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final keepLoggedIn = prefs.getBool('keepLoggedIn') ?? false;
+
+    // Splash ekran süresi (4 saniye)
+    await Future.delayed(const Duration(seconds: 4));
+
+    if (keepLoggedIn) {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage()));
+    } else {
       Navigator.of(
         context,
       ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginPage()));
-    });
+    }
   }
 
   @override
@@ -156,13 +170,12 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     );
                   },
-                  
                   child: Text(
                     'Join',
                     style: TextStyle(
                       fontSize: 65,
                       fontWeight: FontWeight.bold,
-                       color: joinUpColor.withOpacity(0.9), 
+                      color: joinUpColor.withOpacity(0.9),
                       shadows: [
                         Shadow(
                           color: joinUpColor.withOpacity(0.4),
@@ -176,7 +189,6 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
               const SizedBox(width: 2),
-
               AnimatedBuilder(
                 animation: _dropAnimationJoinUp,
                 builder: (context, child) {
@@ -185,13 +197,12 @@ class _SplashScreenState extends State<SplashScreen>
                     child: child,
                   );
                 },
-                
                 child: Text(
                   'Up',
                   style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.w600,
-                     color: joinUpColor.withOpacity(0.9), 
+                    color: joinUpColor.withOpacity(0.9),
                     letterSpacing: -1,
                   ),
                 ),
