@@ -47,6 +47,7 @@ class EventService {
         gender: data['gender'] ?? '',
         duration: duration,
         creatorId: data['creatorId'] ?? '',
+        eventType: data['eventType'] ?? '',  // eventType alanı
       );
     }).toList();
   }
@@ -85,12 +86,13 @@ class EventService {
         gender: '',
         duration: duration,
         creatorId: '',
+        eventType: d['eventType'] ?? '',
       );
     }).toList();
   }
 
   // Etkinliği sil
-Future<void> deleteEvent(String eventId) async {
+  Future<void> deleteEvent(String eventId) async {
     final firestore = FirebaseFirestore.instance;
 
     // 1. Etkinliğe ait tüm chat mesajlarını sil
@@ -155,7 +157,6 @@ Future<void> deleteEvent(String eventId) async {
       }
     }
   }
-
 }
 
 class Event {
@@ -166,6 +167,7 @@ class Event {
   final String gender;
   final DateTime duration;
   final String creatorId;
+  final String eventType;  // Yeni alan
 
   Event({
     required this.eventId,
@@ -175,7 +177,43 @@ class Event {
     required this.gender,
     required this.duration,
     required this.creatorId,
+    required this.eventType,  // Yeni alan
   });
+}
+
+// Yardımcı fonksiyonlar
+IconData getIconForCategory(String type) {
+  switch (type.toLowerCase()) {
+    case 'spor':
+      return Icons.fitness_center;
+    case 'sosyal':
+      return Icons.group;
+    case 'eğitim':
+      return Icons.school;
+    case 'kitap':
+      return Icons.book;
+    case 'eğlence':
+      return Icons.celebration;
+    default:
+      return Icons.event;
+  }
+}
+
+Color getColorForCategory(String type) {
+  switch (type.toLowerCase()) {
+    case 'spor':
+      return Colors.green.shade50;
+    case 'sosyal':
+      return Colors.blue.shade50;
+    case 'eğitim':
+      return Colors.indigo.shade50;
+    case 'kitap':
+      return Colors.brown.shade50;
+    case 'eğlence':
+      return Colors.pink.shade50;
+    default:
+      return Colors.grey.shade200;
+  }
 }
 
 class MyEventsPage extends StatefulWidget {
@@ -212,61 +250,80 @@ class _MyEventsPageState extends State<MyEventsPage>
 
   Widget _eventTile(Event e, {required bool canDelete}) {
     final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
-    return ListTile(
-      title: Text(e.title),
-      subtitle: Text(e.location),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(dateFormat.format(e.duration)),
-          if (canDelete)
-            IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: () async {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder:
-                      (context) => AlertDialog(
-                        title: const Text("Etkinliği sil"),
-                        content: const Text(
-                          "Bu etkinliği silmek istediğinize emin misiniz?",
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text("İptal"),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text("Sil"),
-                          ),
-                        ],
-                      ),
-                );
+    final bgColor = getColorForCategory(e.eventType);
+    final icon = getIconForCategory(e.eventType);
 
-                if (confirm == true) {
-                  await _eventService.deleteEvent(e.eventId);
-                  setState(() {}); // listeyi yenile
-                }
-              },
-            ),
-        ],
+    return Card(
+      color: bgColor,
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
       ),
-      onTap: () {
-        if (e.eventId.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Etkinlik bilgisi bulunamadı")),
-          );
-          return;
-        }
+      child: ListTile(
+        leading: Icon(icon, size: 30, color: Colors.deepPurple),
+        title: Text(
+          e.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(e.location),
+            Text(dateFormat.format(e.duration)),
+          ],
+        ),
+        trailing: canDelete
+            ? IconButton(
+                icon: Container(                    
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(
+                      Icons.delete,
+                      color: Colors.grey[800],
+                      size: 22,
+                    ),
+                  ),
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text("Etkinliği sil"),
+                      content: const Text("Bu etkinliği silmek istediğinize emin misiniz?"),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text("İptal"),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text("Sil"),
+                        ),
+                      ],
+                    ),
+                  );
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ChatScreen(eventName: e.title, eventId: e.eventId),
-          ),
-        );
-      },
+                  if (confirm == true) {
+                    await _eventService.deleteEvent(e.eventId);
+                    setState(() {}); // listeyi yenile
+                  }
+                },
+              )
+            : null,
+        onTap: () {
+          if (e.eventId.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Etkinlik bilgisi bulunamadı")),
+            );
+            return;
+          }
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ChatScreen(eventName: e.title, eventId: e.eventId),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -281,59 +338,69 @@ class _MyEventsPageState extends State<MyEventsPage>
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: primaryColor,
+        iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white,
-          tabs: const [
+          unselectedLabelColor: Colors.white70,
+          tabs: const [ 
             Tab(text: "Oluşturduklarım"),
             Tab(text: "Katıldıklarım"),
           ],
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          FutureBuilder<List<Event>>(
-            future: _getCreatedEvents(),
-            builder: (context, snap) {
-              if (!snap.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final list = snap.data!;
-              if (list.isEmpty) {
-                return const Center(
-                  child: Text("Henüz etkinlik oluşturmadınız."),
-                );
-              }
-              return ListView(
-                children:
-                    list.map((e) => _eventTile(e, canDelete: true)).toList(),
-              );
-            },
-          ),
-          FutureBuilder<List<Event>>(
-            future: _getAttendedEvents(),
-            builder: (context, snap) {
-              if (!snap.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final list = snap.data!;
-              if (list.isEmpty) {
-                return const Center(
-                  child: Text("Henüz katıldığınız etkinlik yok."),
-                );
-              }
-              return ListView(
-                children:
-                    list.map((e) => _eventTile(e, canDelete: false)).toList(),
-              );
-            },
-          ),
-        ],
+        FutureBuilder<List<Event>>(
+        future: _getCreatedEvents(),
+        builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+        }
+                  if (snapshot.hasError) {
+            return Center(child: Text('Hata: ${snapshot.error}'));
+          }
+
+          final events = snapshot.data ?? [];
+
+          if (events.isEmpty) {
+            return const Center(child: Text('Oluşturduğun etkinlik bulunmamaktadır.'));
+          }
+
+          return ListView.builder(
+            itemCount: events.length,
+            itemBuilder: (context, index) => _eventTile(events[index], canDelete: true),
+          );
+        },
       ),
-    );
-  }
+      FutureBuilder<List<Event>>(
+        future: _getAttendedEvents(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(child: Text('Hata: ${snapshot.error}'));
+          }
+
+          final events = snapshot.data ?? [];
+
+          if (events.isEmpty) {
+            return const Center(child: Text('Katıldığın etkinlik bulunmamaktadır.'));
+          }
+
+          return ListView.builder(
+            itemCount: events.length,
+            itemBuilder: (context, index) => _eventTile(events[index], canDelete: false),
+          );
+        },
+      ),
+    ],
+  ),
+);
 }
+}
+          

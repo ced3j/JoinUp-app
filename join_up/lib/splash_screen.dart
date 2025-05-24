@@ -156,12 +156,13 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     );
                   },
+                  
                   child: Text(
                     'Join',
                     style: TextStyle(
                       fontSize: 65,
                       fontWeight: FontWeight.bold,
-                      color: joinUpColor.withOpacity(0.9),
+                       color: joinUpColor.withOpacity(0.9), 
                       shadows: [
                         Shadow(
                           color: joinUpColor.withOpacity(0.4),
@@ -184,12 +185,13 @@ class _SplashScreenState extends State<SplashScreen>
                     child: child,
                   );
                 },
+                
                 child: Text(
                   'Up',
                   style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.w600,
-                    color: joinUpColor,
+                     color: joinUpColor.withOpacity(0.9), 
                     letterSpacing: -1,
                   ),
                 ),
