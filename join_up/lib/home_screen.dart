@@ -130,7 +130,6 @@ class _HomePageState extends State<HomePage> {
     BuildContext context,
     String eventId,
     String eventTitle,
-    String eventDescription, // ✅ Yeni parametre
     String creatorId,
     int currentParticipants,
     int maxParticipants,
@@ -174,18 +173,11 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 const SizedBox(height: 10),
-
-                /// ✅ Etkinlik Açıklaması Eklendi
                 Text(
-                  eventDescription,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontStyle: FontStyle.normal,
-                  ),
+                  "Katılım için etkinlik sahibinin onaylaması gerekiyor.",
+                  style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                 ),
-
                 const SizedBox(height: 8),
-
                 Text(
                   "Mevcut Katılımcı: $currentParticipants/$maxParticipants",
                   style: const TextStyle(fontSize: 15),
@@ -209,7 +201,107 @@ class _HomePageState extends State<HomePage> {
                                       currentParticipants >= maxParticipants)
                               ? null
                               : () async {
-                                // ... (mevcut istek gönderme kodu)
+                                try {
+                                  final joinRequestRef = FirebaseFirestore
+                                      .instance
+                                      .collection('events')
+                                      .doc(eventId)
+                                      .collection('joinRequests');
+
+                                  final existingRequest =
+                                      await joinRequestRef
+                                          .where(
+                                            'userId',
+                                            isEqualTo: currentUserId,
+                                          )
+                                          .limit(1)
+                                          .get();
+
+                                  if (existingRequest.docs.isNotEmpty) {
+                                    if (!context.mounted) return;
+                                    Navigator.pop(context);
+                                    showDialog(
+                                      context: context,
+                                      builder:
+                                          (context) => AlertDialog(
+                                            title: const Text("Uyarı"),
+                                            content: const Text(
+                                              "Bu etkinliğe daha önce istek gönderdiniz veya zaten katılımcısınız.",
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed:
+                                                    () =>
+                                                        Navigator.pop(context),
+                                                child: const Text("Tamam"),
+                                              ),
+                                            ],
+                                          ),
+                                    );
+                                    return;
+                                  }
+
+                                  await joinRequestRef.add({
+                                    'userId': currentUserId,
+                                    'status': 'pending',
+                                    'createdAt': FieldValue.serverTimestamp(),
+                                  });
+
+                                  await FirebaseFirestore.instance
+                                      .collection('users')
+                                      .doc(creatorId)
+                                      .collection('notifications')
+                                      .add({
+                                        'type':
+                                            'join_request', // Bu tip bildirimleri NotificationsPage'de filtreleyebilirsiniz
+                                        'message':
+                                            '${FirebaseAuth.instance.currentUser?.displayName ?? 'Bir kullanıcı'} "${eventTitle}" etkinliğinize katılmak için istek gönderdi.',
+                                        'eventId': eventId,
+                                        'eventTitle':
+                                            eventTitle, // İstek bildiriminde eventTitle da olsun
+                                        'senderId': currentUserId,
+                                        'requestId':
+                                            joinRequestRef
+                                                .doc()
+                                                .id, // Oluşturulan isteğin ID'si (opsiyonel, eğer gerekiyorsa)
+                                        'timestamp':
+                                            FieldValue.serverTimestamp(), // 'createdAt' yerine 'timestamp' kullanıyorsanız
+                                        'read': false,
+                                      });
+
+                                  if (!context.mounted) return;
+                                  Navigator.pop(context);
+
+                                  showDialog(
+                                    context: context,
+                                    builder:
+                                        (context) => AlertDialog(
+                                          title: const Text("Başarılı"),
+                                          content: const Text(
+                                            "Katılım isteğiniz gönderildi. Etkinlik sahibi onayladığında haberdar edileceksiniz.",
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed:
+                                                  () => Navigator.pop(context),
+                                              child: const Text("Tamam"),
+                                            ),
+                                          ],
+                                        ),
+                                  );
+                                } catch (e) {
+                                  print("Error sending join request: $e");
+                                  if (context.mounted) {
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          "İstek gönderilirken bir hata oluştu: ${e.toString()}",
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                }
                               },
                       child: const Text("İstek Gönder"),
                     ),
@@ -396,8 +488,6 @@ class _HomePageState extends State<HomePage> {
 
                     final String eventTitle =
                         data?['title'] as String? ?? 'Başlık Yok';
-                    final String eventDescription =
-                        data?['description'] as String? ?? '';
                     final String creatorId =
                         data?['creatorId'] as String? ?? '';
                     bool favorideMi = favoriEvents.contains(eventId);
@@ -512,7 +602,6 @@ class _HomePageState extends State<HomePage> {
                             context,
                             eventId,
                             eventTitle,
-                            eventDescription, // bu doğru olmalı!
                             creatorId,
                             currentParticipants,
                             maxParticipants,
