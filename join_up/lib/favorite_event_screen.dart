@@ -12,8 +12,6 @@ class FavoritesPage extends StatefulWidget {
     required this.favorites,
     required this.toggleFavori,
   }) : super(key: key);
-  
-  
 
   @override
   _FavorilerSayfasiState createState() => _FavorilerSayfasiState();
@@ -110,13 +108,14 @@ class _FavorilerSayfasiState extends State<FavoritesPage> {
               final event = etkinlikler[index];
               final eventId = event['id'];
               final title = event['title'] ?? 'Başlıksız';
-              final description = event['description'] ?? 'Açıklama yok';
+              final location = event['locationName'] ?? 'Konum belirtilmemiş';
+              final attendeeCount = event['currentParticipiants'] ?? 0;
 
               return Card(
                 child: ListTile(
                   leading: const Icon(Icons.star, color: Colors.amber),
                   title: Text(title),
-                  subtitle: Text(description),
+                  subtitle: Text('$location • $attendeeCount kişi katılıyor'),
                   trailing: IconButton(
                     icon: const Icon(Icons.remove_circle, color: Colors.red),
                     onPressed: () async {
