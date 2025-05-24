@@ -115,7 +115,7 @@ class _HomePageState extends State<HomePage> {
           ),
           child: Container(
             padding: const EdgeInsets.all(16),
-            height: MediaQuery.of(context).size.height * 0.45,
+            height: MediaQuery.of(context).size.height * 0.65,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
