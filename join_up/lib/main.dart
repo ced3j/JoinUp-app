@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart'; // Firebase için eklendi
 import 'firebase_options.dart'; // Firebase için eklendi
-import 'login_screen.dart';
+import 'splash_screen.dart';
 
 void main() async {
   // Firebase için eklendi (async)
@@ -20,6 +20,6 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: LoginPage(), debugShowCheckedModeBanner: false);
+    return MaterialApp(home: SplashScreen(), debugShowCheckedModeBanner: false);
   }
 }
