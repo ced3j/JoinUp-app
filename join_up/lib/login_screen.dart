@@ -4,31 +4,7 @@ import 'package:join_up/signup_screen.dart';
 import 'package:join_up/home_screen.dart';
 import 'package:join_up/forgotpass_screen.dart';
 import 'package:join_up/services/auth_service.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6F2DBD),
-          secondary: const Color(0xFF0E1116),
-        ),
-        textTheme: GoogleFonts.montserratTextTheme(),
-        fontFamily: 'Montserrat',
-      ),
-      home: const LoginPage(),
-    );
-  }
-}
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -43,6 +19,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool obscurePassword = true;
+  bool keepMeLoggedIn = false;
 
   void signIn() async {
     String email = emailController.text.trim();
@@ -51,6 +28,9 @@ class _LoginPageState extends State<LoginPage> {
     var user = await authService.signInWithEmailPassword(email, password);
 
     if (user != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('keepLoggedIn', keepMeLoggedIn);
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Giriş Başarılı!")));
@@ -84,7 +64,21 @@ class _LoginPageState extends State<LoginPage> {
                   buildEmailField(),
                   const SizedBox(height: 20),
                   buildPasswordField(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
+                  CheckboxListTile(
+                    value: keepMeLoggedIn,
+                    onChanged: (value) {
+                      setState(() {
+                        keepMeLoggedIn = value ?? false;
+                      });
+                    },
+                    title: Text(
+                      "Oturum açık kalsın",
+                      style: GoogleFonts.montserrat(fontSize: 14),
+                    ),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                  ),
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -109,7 +103,6 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 30),
                   buildLoginButton(),
                   const SizedBox(height: 40),
-                  Align(),
                   Text(
                     "veya şununla giriş yapın",
                     style: GoogleFonts.montserrat(

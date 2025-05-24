@@ -1,25 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart'; // Firebase için eklendi
-import 'firebase_options.dart'; // Firebase için eklendi
+import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'firebase_options.dart';
 import 'login_screen.dart';
+import 'home_screen.dart';
 
 void main() async {
-  // Firebase için eklendi (async)
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  WidgetsFlutterBinding.ensureInitialized(); // Firebase için eklendi
-  await Firebase.initializeApp(
-    // Firebase için eklendi
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  final prefs = await SharedPreferences.getInstance();
+  final keepLoggedIn = prefs.getBool('keepLoggedIn') ?? false;
 
-  runApp(const MainApp());
+  runApp(MainApp(keepLoggedIn: keepLoggedIn));
 }
 
 class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+  final bool keepLoggedIn;
+
+  const MainApp({super.key, required this.keepLoggedIn});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: LoginPage(), debugShowCheckedModeBanner: false);
+    return MaterialApp(
+      home: keepLoggedIn ? const HomePage() : const LoginPage(),
+      debugShowCheckedModeBanner: false,
+    );
   }
 }
