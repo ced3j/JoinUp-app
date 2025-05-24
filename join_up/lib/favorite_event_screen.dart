@@ -117,7 +117,14 @@ class _FavorilerSayfasiState extends State<FavoritesPage> {
                   title: Text(title),
                   subtitle: Text('$location • $attendeeCount kişi katılıyor'),
                   trailing: IconButton(
-                    icon: const Icon(Icons.remove_circle, color: Colors.red),
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      child: Icon(
+                        Icons.delete,
+                        color: Colors.grey[800],
+                        size: 22,
+                      ),
+                    ),
                     onPressed: () async {
                       await toggleFavori(eventId);
                       setState(() {

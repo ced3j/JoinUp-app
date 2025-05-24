@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:join_up/account_screen.dart';
 import 'package:join_up/login_screen.dart';
 import 'package:join_up/my_events_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -93,20 +95,28 @@ class ProfilePage extends StatelessWidget {
                         title: const Text("İstekler"),
                         onTap: () {},
                       ),
-                      ListTile(
+ListTile(
                         leading: const Icon(Icons.logout),
                         title: const Text("Çıkış Yap"),
-                        onTap: () {
-                          FirebaseAuth.instance.signOut();
+                        onTap: () async {
+                          await FirebaseAuth.instance.signOut();
+
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setBool(
+                            'keepLoggedIn',
+                            false,
+                          ); // Burada değeri false yapıyoruz.
+
                           Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => LoginPage(),
+                              builder: (context) => const LoginPage(),
                             ),
                             (route) => false,
                           );
                         },
                       ),
+
                     ],
                   ),
                 ),
