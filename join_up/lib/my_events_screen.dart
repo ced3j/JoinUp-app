@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'event_screen.dart'; // sohbet ekranını import et
-import 'package:lucide_icons/lucide_icons.dart'; // LucideIcons'ı import ettik
 
 class EventService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -277,15 +276,8 @@ class _MyEventsPageState extends State<MyEventsPage>
                   icon: Container(
                     padding: const EdgeInsets.all(8),
                     child: Icon(
-                      // Seçenek 1: LucideIcons.trash
-                      LucideIcons.trash, // Tercih ettiğim ikon
-                      color: Colors.red.shade700, // Tercih ettiğim renk
-                      // Diğer seçenekleri denemek istersen yorum satırından çıkarabilirsin:
-                      // Icons.delete,
-                      // Icons.delete_outline,
-                      // Icons.cancel_outlined,
-                      // Icons.remove_circle_outline, // Eski ikona daha yakın ama çerçeveli
-                      // LucideIcons.xCircle, // Daire içinde çarpı
+                      Icons.delete,
+                      color: Colors.grey[800],
                       size: 22,
                     ),
                   ),
