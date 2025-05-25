@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:join_up/event_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class NotificationsPage extends StatelessWidget {
   const NotificationsPage({super.key});
@@ -9,17 +10,23 @@ class NotificationsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-
     if (currentUserId == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Bildirimler")),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF6F2DBD),
+          centerTitle: true,
+          title: Text(
+            "Bildirimler",
+            style: GoogleFonts.montserrat(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
         body: const Center(child: Text("Giriş yapılmadı.")),
       );
     }
-
-    final eventsRef = FirebaseFirestore.instance
-        .collection('events')
-        .where('creatorId', isEqualTo: currentUserId);
 
     final userNotificationsRef = FirebaseFirestore.instance
         .collection('users')
@@ -27,28 +34,37 @@ class NotificationsPage extends StatelessWidget {
         .collection('notifications')
         .orderBy('timestamp', descending: true);
 
+    final eventsRef = FirebaseFirestore.instance
+        .collection('events')
+        .where('creatorId', isEqualTo: currentUserId);
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Bildirimler"), centerTitle: true),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF6F2DBD),
+        centerTitle: true,
+        title: Text(
+          "Bildirimler",
+          style: GoogleFonts.montserrat(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
       body: Column(
         children: [
-          // Katılımcı bildirimleri
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: userNotificationsRef.snapshots(),
-              builder: (context, notificationSnapshot) {
-                if (!notificationSnapshot.hasData) {
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final allNotifications = notificationSnapshot.data!.docs;
-
-                // Bildirimler içinde sadece 'joinApproved' tipinde olanları al
                 final notifications =
-                    allNotifications.where((doc) {
+                    snapshot.data!.docs.where((doc) {
                       final data = doc.data() as Map<String, dynamic>?;
-                      return data != null &&
-                          data.containsKey('type') &&
-                          data['type'] == 'joinApproved';
+                      return data?['type'] == 'joinApproved';
                     }).toList();
 
                 if (notifications.isEmpty) {
@@ -60,8 +76,8 @@ class NotificationsPage extends StatelessWidget {
                 return ListView.builder(
                   itemCount: notifications.length,
                   itemBuilder: (context, index) {
-                    final notif = notifications[index];
-                    final data = notif.data() as Map<String, dynamic>;
+                    final data =
+                        notifications[index].data() as Map<String, dynamic>;
                     final eventTitle = data['eventTitle'] ?? "Etkinlik";
 
                     return ListTile(
@@ -76,9 +92,10 @@ class NotificationsPage extends StatelessWidget {
                               )
                               : null,
                       onTap: () async {
-                        await notif.reference.update({'read': true});
-                        final data = notif.data() as Map<String, dynamic>?;
-                        final eventId = data != null ? data['eventId'] : null;
+                        await notifications[index].reference.update({
+                          'read': true,
+                        });
+                        final eventId = data['eventId'];
                         if (eventId != null) {
                           Navigator.push(
                             context,
@@ -104,18 +121,17 @@ class NotificationsPage extends StatelessWidget {
               },
             ),
           ),
-
-          // Etkinlik sahibi için gelen istekler
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: eventsRef.snapshots(),
-              builder: (context, eventSnapshot) {
-                if (!eventSnapshot.hasData) {
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                final eventDocs = eventSnapshot.data!.docs;
 
-                if (eventDocs.isEmpty) {
+                final events = snapshot.data!.docs;
+
+                if (events.isEmpty) {
                   return const Center(
                     child: Text("Henüz etkinlik bildiriminiz yok."),
                   );
@@ -123,8 +139,9 @@ class NotificationsPage extends StatelessWidget {
 
                 return ListView(
                   children:
-                      eventDocs.expand((eventDoc) {
+                      events.expand((eventDoc) {
                         final eventTitle = eventDoc['title'];
+
                         return [
                           StreamBuilder<QuerySnapshot>(
                             stream:
@@ -143,10 +160,15 @@ class NotificationsPage extends StatelessWidget {
                               }
 
                               return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children:
                                     requests.map((requestDoc) {
+                                      final userId = requestDoc['userId'];
+
                                       return Card(
+                                        margin: const EdgeInsets.symmetric(
+                                          vertical: 4,
+                                          horizontal: 8,
+                                        ),
                                         child: ListTile(
                                           title: Text("Etkinlik: $eventTitle"),
                                           subtitle: FutureBuilder<
@@ -155,25 +177,17 @@ class NotificationsPage extends StatelessWidget {
                                             future:
                                                 FirebaseFirestore.instance
                                                     .collection('users')
-                                                    .doc(requestDoc['userId'])
+                                                    .doc(userId)
                                                     .get(),
                                             builder: (context, userSnapshot) {
-                                              if (userSnapshot
-                                                      .connectionState ==
-                                                  ConnectionState.waiting) {
+                                              if (!userSnapshot.hasData) {
                                                 return const SizedBox.shrink();
-                                              }
-                                              if (!userSnapshot.hasData ||
-                                                  !userSnapshot.data!.exists) {
-                                                return const Text(
-                                                  "İstek gönderen: Bilinmiyor",
-                                                );
                                               }
                                               final userData =
                                                   userSnapshot.data!.data()
-                                                      as Map<String, dynamic>;
+                                                      as Map<String, dynamic>?;
                                               final fullName =
-                                                  userData['fullName'] ??
+                                                  userData?['fullName'] ??
                                                   "Ad Soyad";
                                               return Text(
                                                 "İstek gönderen: $fullName",
@@ -189,20 +203,15 @@ class NotificationsPage extends StatelessWidget {
                                                   color: Colors.green,
                                                 ),
                                                 onPressed: () async {
-                                                  // Onaylama işlemleri
                                                   await requestDoc.reference
                                                       .update({
                                                         'status': 'approved',
                                                       });
 
-                                                  await FirebaseFirestore
-                                                      .instance
-                                                      .collection('events')
-                                                      .doc(eventDoc.id)
+                                                  await eventDoc.reference
                                                       .collection('attendees')
                                                       .add({
-                                                        'userId':
-                                                            requestDoc['userId'],
+                                                        'userId': userId,
                                                         'joinedAt':
                                                             FieldValue.serverTimestamp(),
                                                       });
@@ -210,7 +219,7 @@ class NotificationsPage extends StatelessWidget {
                                                   await FirebaseFirestore
                                                       .instance
                                                       .collection('users')
-                                                      .doc(requestDoc['userId'])
+                                                      .doc(userId)
                                                       .collection(
                                                         'attendedEvents',
                                                       )
@@ -224,11 +233,6 @@ class NotificationsPage extends StatelessWidget {
                                                             FieldValue.serverTimestamp(),
                                                       });
 
-                                                  // currentParticipants değerini artır (atomic)
-                                                  final eventDocRef =
-                                                      FirebaseFirestore.instance
-                                                          .collection('events')
-                                                          .doc(eventDoc.id);
                                                   await FirebaseFirestore
                                                       .instance
                                                       .runTransaction((
@@ -237,19 +241,18 @@ class NotificationsPage extends StatelessWidget {
                                                         final snapshot =
                                                             await transaction
                                                                 .get(
-                                                                  eventDocRef,
+                                                                  eventDoc
+                                                                      .reference,
                                                                 );
-                                                        if (!snapshot.exists) {
-                                                          throw Exception(
-                                                            "Etkinlik bulunamadı",
-                                                          );
-                                                        }
                                                         final currentCount =
-                                                            snapshot
-                                                                .data()?['currentParticipants'] ??
+                                                            (snapshot.data()
+                                                                as Map<
+                                                                  String,
+                                                                  dynamic
+                                                                >?)?['currentParticipants'] ??
                                                             0;
                                                         transaction.update(
-                                                          eventDocRef,
+                                                          eventDoc.reference,
                                                           {
                                                             'currentParticipants':
                                                                 currentCount +
@@ -258,11 +261,10 @@ class NotificationsPage extends StatelessWidget {
                                                         );
                                                       });
 
-                                                  // Katılımcıya bildirim gönder
                                                   await FirebaseFirestore
                                                       .instance
                                                       .collection('users')
-                                                      .doc(requestDoc['userId'])
+                                                      .doc(userId)
                                                       .collection(
                                                         'notifications',
                                                       )
@@ -292,10 +294,11 @@ class NotificationsPage extends StatelessWidget {
                                                   Icons.close,
                                                   color: Colors.red,
                                                 ),
-                                                onPressed: () {
-                                                  requestDoc.reference.update({
-                                                    'status': 'rejected',
-                                                  });
+                                                onPressed: () async {
+                                                  await requestDoc.reference
+                                                      .update({
+                                                        'status': 'rejected',
+                                                      });
                                                 },
                                               ),
                                             ],
@@ -313,60 +316,6 @@ class NotificationsPage extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// Event detay sayfası, eventId alıyor
-class EventDetailPage extends StatelessWidget {
-  final String eventId;
-  const EventDetailPage({super.key, required this.eventId});
-
-  @override
-  Widget build(BuildContext context) {
-    final eventRef = FirebaseFirestore.instance
-        .collection('events')
-        .doc(eventId);
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Etkinlik Detayı')),
-      body: FutureBuilder<DocumentSnapshot>(
-        future: eventRef.get(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text("Etkinlik bulunamadı"));
-          }
-          final eventData = snapshot.data!.data() as Map<String, dynamic>;
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  eventData['title'] ?? 'Başlık yok',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  eventData['description'] ?? 'Açıklama yok',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "Konum: ${eventData['location'] ?? 'Bilinmiyor'}",
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ],
-            ),
-          );
-        },
       ),
     );
   }

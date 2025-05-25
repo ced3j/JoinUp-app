@@ -8,6 +8,7 @@ import 'package:join_up/createEvent_screen.dart';
 import 'package:join_up/profile_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:join_up/filter_screen.dart'; // Assuming this import is correct
+import 'package:google_fonts/google_fonts.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -315,13 +316,18 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF6F2DBD);
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ana Sayfa', style: TextStyle(color: Colors.white)),
+        title: Text(
+          'Ana Sayfa',
+          style: GoogleFonts.montserrat(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: primaryColor,
         actions: [
@@ -347,9 +353,7 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => NotificationsPage(), // Removed const
-                ),
+                MaterialPageRoute(builder: (context) => NotificationsPage()),
               );
             },
           ),
