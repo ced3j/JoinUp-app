@@ -4,12 +4,41 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:join_up/event_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class NotificationsPage extends StatelessWidget {
+class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
 
   @override
+  State<NotificationsPage> createState() => _NotificationsPageState();
+}
+
+class _NotificationsPageState extends State<NotificationsPage> {
+  String? currentUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId != null) {
+      markAllNotificationsRead(currentUserId!);
+    }
+  }
+
+  Future<void> markAllNotificationsRead(String userId) async {
+    final unreadNotifications =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .collection('notifications')
+            .where('read', isEqualTo: false)
+            .get();
+
+    for (var doc in unreadNotifications.docs) {
+      await doc.reference.update({'read': true});
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     if (currentUserId == null) {
       return Scaffold(
         appBar: AppBar(
@@ -41,6 +70,7 @@ class NotificationsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF6F2DBD),
+        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
         title: Text(
           "Bildirimler",
@@ -79,13 +109,14 @@ class NotificationsPage extends StatelessWidget {
                     final data =
                         notifications[index].data() as Map<String, dynamic>;
                     final eventTitle = data['eventTitle'] ?? "Etkinlik";
+                    final isRead = data['read'] ?? true; // read yoksa true
 
                     return ListTile(
                       leading: const Icon(Icons.notifications),
                       title: const Text("Etkinliğe katılım onaylandı"),
                       subtitle: Text("Etkinlik: $eventTitle"),
                       trailing:
-                          data['read'] == false
+                          !isRead
                               ? const Icon(
                                 Icons.fiber_new,
                                 color: Colors.purple,
@@ -261,6 +292,7 @@ class NotificationsPage extends StatelessWidget {
                                                         );
                                                       });
 
+                                                  // Yeni bildirim ekle
                                                   await FirebaseFirestore
                                                       .instance
                                                       .collection('users')

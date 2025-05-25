@@ -211,7 +211,7 @@ Color getColorForCategory(String type) {
     case 'eğlence':
       return Colors.pink.shade50;
     default:
-      return Colors.grey.shade200;
+      return Colors.grey.shade100;
   }
 }
 

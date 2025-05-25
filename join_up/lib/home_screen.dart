@@ -20,12 +20,38 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   TextEditingController searchController = TextEditingController();
   final Set<String> favoriEvents = {};
-
+  bool hasNotifications = false;
   @override
   void initState() {
     super.initState();
     _loadFavoritesFromFirestore();
+    checkNotifications();
   }
+
+
+
+void checkNotifications() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    final querySnapshot =
+        await FirebaseFirestore.instance
+            .collection('users') // 🔹 doğru path
+            .doc(userId)
+            .collection('notifications')
+            .where('read', isEqualTo: false)
+            .limit(1)
+            .get();
+
+    setState(() {
+      hasNotifications = querySnapshot.docs.isNotEmpty;
+    });
+  }
+
+
+
+
+
 
   Color getCardColor(String eventType) {
     switch (eventType.toLowerCase()) {
@@ -40,7 +66,7 @@ class _HomePageState extends State<HomePage> {
       case 'eğlence':
         return Colors.pink[50]!;
       default:
-        return Colors.grey[100]!;
+        return Colors.grey[50]!;
     }
   }
 
@@ -332,7 +358,7 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: primaryColor,
         actions: [
           IconButton(
-            icon: const Icon(Icons.star),
+            icon: const Icon(Icons.star,size: 25,),
             onPressed: () {
               Navigator.push(
                 context,
@@ -348,15 +374,37 @@ class _HomePageState extends State<HomePage> {
               });
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: () {
-              Navigator.push(
+IconButton(
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(Icons.notifications, size: 25),
+                if (hasNotifications)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      width: 11,
+                      height: 11,
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            onPressed: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => NotificationsPage()),
               );
+              await Future.delayed(Duration(milliseconds: 500));
+              checkNotifications();
             },
-          ),
+          )
+
+
         ],
       ),
       body: Column(
@@ -670,7 +718,13 @@ class _HomePageState extends State<HomePage> {
             label: 'Ana Sayfa',
           ), // Changed icon
           BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle_outline_rounded), // Changed icon
+            icon: Icon(
+              Icons.add_rounded,
+              size: 25.0, // 🔹 Boyut
+              color: Color.fromARGB(255, 46, 3, 54), 
+              
+            ),
+             // Changed icon
             label: 'Etkinlik Oluştur',
           ),
           BottomNavigationBarItem(
