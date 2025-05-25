@@ -15,14 +15,6 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  bool _showDetails = false;
-
-  void _toggleDetailsPanel() {
-    setState(() {
-      _showDetails = !_showDetails;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -40,34 +32,24 @@ class _ChatScreenState extends State<ChatScreen> {
           IconButton(
             icon: const Icon(
               Icons.info_outline,
-              color: Color.fromARGB(220, 255, 235, 58), // Sarımsı renk
+              color: Color.fromARGB(220, 255, 235, 58),
             ),
-            onPressed: _toggleDetailsPanel,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  fullscreenDialog: true,
+                  builder:
+                      (_) => EventDetailsFullScreen(eventId: widget.eventId),
+                ),
+              );
+            },
           ),
         ],
       ),
-      body: Stack(
+      body: Column(
         children: [
-          Column(
-            children: [
-              Expanded(child: ChatMessages(eventId: widget.eventId)),
-              MessageInput(eventId: widget.eventId),
-            ],
-          ),
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 300),
-            top: _showDetails ? 0 : -300,
-            left: 0,
-            right: 0,
-            height: 300,
-            child: Material(
-              elevation: 8,
-              child: EventDetailsPanel(
-                eventId: widget.eventId,
-                onClose: _toggleDetailsPanel,
-              ),
-            ),
-          ),
+          Expanded(child: ChatMessages(eventId: widget.eventId)),
+          MessageInput(eventId: widget.eventId),
         ],
       ),
     );
@@ -90,7 +72,6 @@ class _ChatMessagesState extends State<ChatMessages> {
     if (_userNamesCache.containsKey(userId)) {
       return _userNamesCache[userId]!;
     }
-
     final doc =
         await FirebaseFirestore.instance.collection('users').doc(userId).get();
     final userName = doc.data()?['fullName'] ?? 'Bilinmeyen';
@@ -264,15 +245,10 @@ class _MessageInputState extends State<MessageInput> {
   }
 }
 
-class EventDetailsPanel extends StatelessWidget {
+class EventDetailsFullScreen extends StatelessWidget {
   final String eventId;
-  final VoidCallback onClose;
 
-  const EventDetailsPanel({
-    super.key,
-    required this.eventId,
-    required this.onClose,
-  });
+  const EventDetailsFullScreen({super.key, required this.eventId});
 
   void _openMap(double lat, double lng) async {
     final uri = Uri.parse(
@@ -285,15 +261,20 @@ class EventDetailsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(16),
-      child: FutureBuilder<DocumentSnapshot>(
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: const Text("Etkinlik Detayları"),
+        backgroundColor: const Color(0xFF6F2DBD),
+        foregroundColor: Colors.white,
+      ),
+      body: FutureBuilder<DocumentSnapshot>(
         future:
             FirebaseFirestore.instance.collection('events').doc(eventId).get(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
           final participantsData = data['currentParticipants'];
@@ -308,47 +289,75 @@ class EventDetailsPanel extends StatelessWidget {
           final gender = data['gender'] ?? 'Herkes';
           final GeoPoint location = data['location'];
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: onClose,
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _infoTile("👥 Katılımcı Sayısı", "$currentParticipants"),
+                const SizedBox(height: 12),
+                _infoTile("⚧️ Cinsiyet Kriteri", gender),
+                const SizedBox(height: 16),
+                const Text(
+                  "📍 Etkinlik Konumu",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-              ),
-              Text(
-                "Katılımcı Sayısı: $currentParticipants",
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Cinsiyet Kriteri: $gender",
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: LatLng(location.latitude, location.longitude),
-                    zoom: 14,
-                  ),
-                  markers: {
-                    Marker(
-                      markerId: const MarkerId("eventLocation"),
-                      position: LatLng(location.latitude, location.longitude),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: GoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target: LatLng(location.latitude, location.longitude),
+                        zoom: 14,
+                      ),
+                      markers: {
+                        Marker(
+                          markerId: const MarkerId("eventLocation"),
+                          position: LatLng(
+                            location.latitude,
+                            location.longitude,
+                          ),
+                          onTap:
+                              () => _openMap(
+                                location.latitude,
+                                location.longitude,
+                              ),
+                        ),
+                      },
+                      zoomControlsEnabled: false,
                       onTap:
-                          () => _openMap(location.latitude, location.longitude),
+                          (LatLng pos) => _openMap(pos.latitude, pos.longitude),
                     ),
-                  },
-                  zoomControlsEnabled: false,
-                  onTap: (LatLng pos) => _openMap(pos.latitude, pos.longitude),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _infoTile(String title, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const Spacer(),
+          Text(value, style: const TextStyle(fontSize: 16)),
+        ],
       ),
     );
   }
