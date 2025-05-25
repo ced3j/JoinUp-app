@@ -51,14 +51,14 @@ class EventService {
   // Ortak: Firestore verisini Event modeline dönüştür
   Event _eventFromDoc(String id, Map<String, dynamic> data) {
     // duration alanı
-    DateTime duration;
-    final rawDur = data['duration'];
-    if (rawDur is Timestamp) {
-      duration = rawDur.toDate();
-    } else if (rawDur is String) {
-      duration = DateTime.tryParse(rawDur) ?? DateTime.now();
+DateTime createdAt;
+    final rawCreatedAt = data['createdAt'];
+    if (rawCreatedAt is Timestamp) {
+      createdAt = rawCreatedAt.toDate();
+    } else if (rawCreatedAt is String) {
+      createdAt = DateTime.tryParse(rawCreatedAt) ?? DateTime(2000);
     } else {
-      duration = DateTime.now();
+      createdAt = DateTime(2000); // fallback
     }
 
     // locationName
@@ -74,13 +74,14 @@ class EventService {
       location: locationText,
       description: data['description'] ?? '',
       gender: data['gender'] ?? '',
-      duration: duration,
       creatorId: data['creatorId'] ?? '',
       eventType: data['eventType'] ?? '',
       minParticipants: data['minParticipants'] ?? 0,
       maxParticipants: data['maxParticipants'] ?? 0,
       currentParticipants: data['currentParticipants'] ?? 0,
+      createdAt: createdAt, // 🔥 BURASI EKLENDİ
     );
+
   }
 
   // Etkinliği sil
@@ -157,12 +158,12 @@ class Event {
   final String location;
   final String description;
   final String gender;
-  final DateTime duration;
   final String creatorId;
   final String eventType;
   final int minParticipants; // Yeni eklendi
   final int maxParticipants; // Yeni eklendi
   final int currentParticipants; // Yeni eklendi
+  final DateTime createdAt; 
 
   Event({
     required this.eventId,
@@ -170,12 +171,12 @@ class Event {
     required this.location,
     required this.description,
     required this.gender,
-    required this.duration,
     required this.creatorId,
     required this.eventType,
     required this.minParticipants,
     required this.maxParticipants,
     required this.currentParticipants,
+    required this.createdAt,
   });
 }
 
@@ -267,7 +268,7 @@ class _MyEventsPageState extends State<MyEventsPage>
             Text(
               e.location,
             ), // Artık sadece locationName'den veya eventLocationName'den gelen değer burada
-            Text(dateFormat.format(e.duration)),
+            Text(dateFormat.format(e.createdAt)),
           ],
         ),
         trailing:
