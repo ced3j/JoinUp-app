@@ -71,9 +71,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: primaryColor,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             FutureBuilder<String>(
               future: _imageUrlFuture,
@@ -97,44 +98,39 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               },
             ),
             const SizedBox(height: 24),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  "E-posta adresinizi girin",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: darkColor,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  "Şifre sıfırlama bağlantısı e-posta adresinize gönderilecektir.",
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-                const SizedBox(height: 24),
-                TextField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: "E-posta",
-                    hintText: "ornek@eposta.com",
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _resetPassword,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: const Text("Gönder", style: TextStyle(fontSize: 16)),
-                ),
-              ],
+            const Text(
+              "E-posta adresinizi girin",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: darkColor
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "Şifre sıfırlama bağlantısı e-posta adresinize gönderilecektir.",
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            TextField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: "E-posta",
+                hintText: "ornek@eposta.com",
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.email),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _resetPassword,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF6F2DBD),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: const Text("Gönder", style: TextStyle(fontSize: 16)),
             ),
           ],
         ),
