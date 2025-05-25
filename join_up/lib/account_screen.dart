@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/services.dart';
 
 const Color primaryColor = Color(0xFF6F2DBD);
 const Color accentColor = Color(0xFFFFD600);
@@ -19,6 +21,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  // Bu controller geri geldi! Kullanıcı bilgisi güncelleme için şifre doğrulaması için kullanılacak.
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _oldPasswordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
@@ -30,10 +33,49 @@ class _AccountScreenState extends State<AccountScreen> {
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
 
+  String selectedProfileUrl =
+      ""; // Kullanıcının seçtiği/kaydettiği profil fotoğrafı URL'si
+
+  // Firebase Storage'daki dosya isimleri
+  static const List<String> fileNames = [
+    "man1.png",
+    "man2.png",
+    "man3.png",
+    "woman1.png",
+    "woman2.png",
+    "woman3.png",
+  ];
+
+  // Bu listeyi Firebase Storage'dan çekilen URL'lerle dolduracağız
+  List<String> profileImageUrls = []; // Dynamic olarak doldurulacak
+
   @override
   void initState() {
     super.initState();
-    _loadUserData();
+    // Önce profil resim URL'lerini yükle, sonra kullanıcı verisini yükle
+    _loadProfileImageUrls().then((_) {
+      _loadUserData();
+    });
+  }
+
+  // Resimlerin indirilebilir URL'lerini Firebase Storage'dan çeker
+  Future<void> _loadProfileImageUrls() async {
+    List<String> urls = [];
+    final storageRef = FirebaseStorage.instance.ref();
+
+    for (String fileName in fileNames) {
+      try {
+        final String downloadUrl =
+            await storageRef.child(fileName).getDownloadURL();
+        urls.add(downloadUrl);
+      } catch (e) {
+        print("Error getting download URL for $fileName: $e");
+        urls.add(""); // Hata durumunda boş bir URL ekle
+      }
+    }
+    setState(() {
+      profileImageUrls = urls;
+    });
   }
 
   Future<void> _loadUserData() async {
@@ -49,32 +91,44 @@ class _AccountScreenState extends State<AccountScreen> {
         setState(() {
           _fullNameController.text = data['fullName'] ?? '';
           _emailController.text = user.email ?? '';
+          selectedProfileUrl = data['profileImage'] ?? ""; // Kayıtlı URL'yi çek
         });
       }
     }
   }
 
+  // Sadece isim ve e-posta gibi diğer bilgileri güncelleyen fonksiyon
   Future<void> _updateUserInfo() async {
     final user = FirebaseAuth.instance.currentUser;
     final firestore = FirebaseFirestore.instance;
     final fullName = _fullNameController.text.trim();
     final email = _emailController.text.trim();
+    // Geri gelen şifre alanı
     final password = _passwordController.text.trim();
 
     if (user == null || password.isEmpty) {
+      // Şifre boşsa uyarı ver
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Lütfen tüm alanları doldurun.")),
+        const SnackBar(
+          content: Text("Lütfen kimlik doğrulama şifrenizi girin."),
+        ),
       );
       return;
     }
 
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
     try {
+      // Kimlik doğrulama adımı geri geldi
       final credential = EmailAuthProvider.credential(
         email: user.email!,
         password: password,
       );
       await user.reauthenticateWithCredential(credential);
 
+      // E-posta değiştiyse güncelle
       if (email != user.email) {
         await user.updateEmail(email);
       }
@@ -82,11 +136,14 @@ class _AccountScreenState extends State<AccountScreen> {
       await firestore.collection('users').doc(user.uid).update({
         'fullName': fullName,
         'email': email,
+        // Profil fotoğrafı güncellemesi artık burada değil, doğrudan _showProfileSelectionDialog içinde yapılacak
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Bilgiler başarıyla güncellendi.')),
       );
+      // Başarılı güncelleme sonrası şifre alanını temizle
+      _passwordController.clear();
     } on FirebaseAuthException catch (e) {
       String message = 'Bir hata oluştu.';
       if (e.code == 'wrong-password') {
@@ -96,7 +153,10 @@ class _AccountScreenState extends State<AccountScreen> {
       } else if (e.code == 'email-already-in-use') {
         message = 'Bu e-posta adresi zaten kullanımda.';
       } else if (e.code == 'requires-recent-login') {
-        message = 'Bu işlem için tekrar giriş yapmanız gerekiyor.';
+        message =
+            'Bu işlem için tekrar giriş yapmanız gerekiyor (e-posta güncellemesi için).';
+      } else if (e.code == 'invalid-email') {
+        message = 'Geçersiz e-posta formatı.';
       }
 
       ScaffoldMessenger.of(
@@ -157,11 +217,73 @@ class _AccountScreenState extends State<AccountScreen> {
     }
   }
 
+  // Profil fotoğrafı seçildiğinde Firestore'a doğrudan kaydeden fonksiyon
+  Future<void> _saveProfileImageToFirestore(String imageUrl) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({'profileImage': imageUrl});
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profil fotoğrafı güncellendi.')),
+        );
+      } catch (e) {
+        print("Error saving profile image: $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profil fotoğrafı güncellenirken bir hata oluştu.'),
+          ),
+        );
+      }
+    }
+  }
+
+  void _showProfileSelectionDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) {
+        if (profileImageUrls.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return GridView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: profileImageUrls.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemBuilder: (ctx, index) {
+            final url = profileImageUrls[index];
+            return GestureDetector(
+              onTap: () async {
+                // Async yaparak _saveProfileImageToFirestore'u bekleyebiliriz
+                setState(() {
+                  selectedProfileUrl = url; // UI'ı hemen güncelle
+                });
+                Navigator.of(context).pop(); // Diyalogu kapat
+
+                // Profil fotoğrafını seçer seçmez Firestore'a kaydet
+                await _saveProfileImageToFirestore(url);
+              },
+              child: CircleAvatar(
+                backgroundImage: NetworkImage(url),
+                radius: 40,
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _fullNameController.dispose();
     _emailController.dispose();
-    _passwordController.dispose();
+    _passwordController.dispose(); // Tekrar dispose ediliyor
     _oldPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmNewPasswordController.dispose();
@@ -202,6 +324,12 @@ class _AccountScreenState extends State<AccountScreen> {
                             "İsim Soyisim",
                             _fullNameController,
                             Icons.person_outline,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return "İsim Soyisim boş bırakılamaz";
+                              }
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 20),
                           buildInputField(
@@ -209,8 +337,20 @@ class _AccountScreenState extends State<AccountScreen> {
                             _emailController,
                             Icons.email_outlined,
                             keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return "Email boş bırakılamaz";
+                              }
+                              if (!RegExp(
+                                r'^[^@]+@[^@]+\.[^@]+',
+                              ).hasMatch(value)) {
+                                return "Geçerli bir email adresi girin";
+                              }
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 20),
+                          // "Şifre (Kimlik Doğrulama)" alanı geri geldi
                           buildInputField(
                             "Şifre (Kimlik Doğrulama)",
                             _passwordController,
@@ -221,6 +361,12 @@ class _AccountScreenState extends State<AccountScreen> {
                                 () => _obscurePassword = !_obscurePassword,
                               );
                             },
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return "Kimlik doğrulama şifresi boş bırakılamaz";
+                              }
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 40),
                           Align(
@@ -229,7 +375,8 @@ class _AccountScreenState extends State<AccountScreen> {
                               width: 140,
                               height: 45,
                               child: ElevatedButton(
-                                onPressed: _updateUserInfo,
+                                onPressed:
+                                    _updateUserInfo, // Sadece isim ve e-posta günceller
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: accentColor,
                                   shape: RoundedRectangleBorder(
@@ -274,6 +421,12 @@ class _AccountScreenState extends State<AccountScreen> {
                                     _obscureOldPassword = !_obscureOldPassword,
                               );
                             },
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return "Eski şifre boş bırakılamaz";
+                              }
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 20),
                           buildInputField(
@@ -286,6 +439,15 @@ class _AccountScreenState extends State<AccountScreen> {
                                 () =>
                                     _obscureNewPassword = !_obscureNewPassword,
                               );
+                            },
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return "Yeni şifre boş bırakılamaz";
+                              }
+                              if (value.length < 6) {
+                                return "Şifre en az 6 karakter olmalı";
+                              }
+                              return null;
                             },
                           ),
                           const SizedBox(height: 20),
@@ -300,6 +462,15 @@ class _AccountScreenState extends State<AccountScreen> {
                                     _obscureConfirmPassword =
                                         !_obscureConfirmPassword,
                               );
+                            },
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return "Yeni şifre tekrar boş bırakılamaz";
+                              }
+                              if (value != _newPasswordController.text) {
+                                return "Şifreler eşleşmiyor";
+                              }
+                              return null;
                             },
                           ),
                           const SizedBox(height: 20),
@@ -387,16 +558,23 @@ class _AccountScreenState extends State<AccountScreen> {
         Positioned(
           bottom: -50,
           left: MediaQuery.of(context).size.width / 2 - 50,
-          child: CircleAvatar(
-            radius: 50,
-            backgroundColor: Colors.grey[200],
-            backgroundImage: const AssetImage('assets/profile.jpg'),
-            child: Align(
-              alignment: Alignment.bottomRight,
-              child: CircleAvatar(
-                radius: 15,
-                backgroundColor: primaryColor,
-                child: const Icon(Icons.edit, size: 18, color: Colors.white),
+          child: GestureDetector(
+            onTap: () => _showProfileSelectionDialog(context),
+            child: CircleAvatar(
+              radius: 50,
+              backgroundColor: Colors.grey[200],
+              // selectedProfileUrl boşsa veya doğru URL gelmediyse varsayılan resim
+              backgroundImage:
+                  selectedProfileUrl.isNotEmpty
+                      ? NetworkImage(selectedProfileUrl)
+                      : const AssetImage('assets/profile.jpg') as ImageProvider,
+              child: Align(
+                alignment: Alignment.bottomRight,
+                child: CircleAvatar(
+                  radius: 15,
+                  backgroundColor: primaryColor,
+                  child: const Icon(Icons.edit, size: 18, color: Colors.white),
+                ),
               ),
             ),
           ),
@@ -412,6 +590,7 @@ class _AccountScreenState extends State<AccountScreen> {
     TextInputType keyboardType = TextInputType.text,
     bool obscureText = false,
     VoidCallback? obscureToggle,
+    String? Function(String?)? validator, // Validator parametresi
   }) {
     return TextFormField(
       controller: controller,
@@ -453,12 +632,7 @@ class _AccountScreenState extends State<AccountScreen> {
           borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
         ),
       ),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return "$label boş bırakılamaz";
-        }
-        return null;
-      },
+      validator: validator, // Validator kullanılıyor
     );
   }
 }
