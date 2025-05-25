@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'event_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class FavoritesPage extends StatefulWidget {
   final Set<String> favorites;
@@ -82,13 +83,18 @@ class _FavorilerSayfasiState extends State<FavoritesPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Favori Etkinlikler',
-          style: TextStyle(color: Colors.white),
+          style: GoogleFonts.montserrat(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
+
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _favoriEtkinlikler,
         builder: (context, snapshot) {
