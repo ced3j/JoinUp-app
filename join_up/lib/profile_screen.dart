@@ -6,7 +6,6 @@ import 'package:join_up/login_screen.dart';
 import 'package:join_up/my_events_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
@@ -91,11 +90,6 @@ class ProfilePage extends StatelessWidget {
                         },
                       ),
                       ListTile(
-                        leading: const Icon(Icons.room_service_sharp),
-                        title: const Text("İstekler"),
-                        onTap: () {},
-                      ),
-ListTile(
                         leading: const Icon(Icons.logout),
                         title: const Text("Çıkış Yap"),
                         onTap: () async {
@@ -116,7 +110,6 @@ ListTile(
                           );
                         },
                       ),
-
                     ],
                   ),
                 ),
