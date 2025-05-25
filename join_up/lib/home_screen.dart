@@ -1,3 +1,4 @@
+// home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart'; // For DateFormat
@@ -21,6 +22,14 @@ class _HomePageState extends State<HomePage> {
   TextEditingController searchController = TextEditingController();
   final Set<String> favoriEvents = {};
   bool hasNotifications = false;
+
+  // New filter state variables
+  String? _selectedCategoryFilter;
+  DateTime? _selectedDateFilter;
+  int _attendeesMinFilter = 1;
+  int _attendeesMaxFilter = 100;
+  String _selectedGenderFilter = 'Herkes';
+
   @override
   void initState() {
     super.initState();
@@ -28,15 +37,13 @@ class _HomePageState extends State<HomePage> {
     checkNotifications();
   }
 
-
-
-void checkNotifications() async {
+  void checkNotifications() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
 
     final querySnapshot =
         await FirebaseFirestore.instance
-            .collection('users') // 🔹 doğru path
+            .collection('users')
             .doc(userId)
             .collection('notifications')
             .where('read', isEqualTo: false)
@@ -47,11 +54,6 @@ void checkNotifications() async {
       hasNotifications = querySnapshot.docs.isNotEmpty;
     });
   }
-
-
-
-
-
 
   Color getCardColor(String eventType) {
     switch (eventType.toLowerCase()) {
@@ -73,17 +75,17 @@ void checkNotifications() async {
   IconData getEventIcon(String eventType) {
     switch (eventType.toLowerCase()) {
       case 'spor':
-        return LucideIcons.dumbbell; // Spor için dambıl ikonu
+        return LucideIcons.dumbbell;
       case 'sosyal':
-        return LucideIcons.users; // Sosyal etkinlikler için kullanıcılar grubu
+        return LucideIcons.users;
       case 'eğitim':
-        return LucideIcons.graduationCap; // Eğitim için mezuniyet kepi
+        return LucideIcons.graduationCap;
       case 'kitap':
-        return LucideIcons.bookOpen; // Kitap için açık kitap
+        return LucideIcons.bookOpen;
       case 'eğlence':
-        return LucideIcons.partyPopper; // Eğlence için konfeti/parti simgesi
+        return LucideIcons.partyPopper;
       default:
-        return LucideIcons.calendarHeart; // Varsayılan ikon
+        return LucideIcons.calendarHeart;
     }
   }
 
@@ -107,7 +109,6 @@ void checkNotifications() async {
       }
     } catch (e) {
       print("Error loading favorites: $e");
-      // Optionally show a snackbar to the user
     }
   }
 
@@ -141,16 +142,7 @@ void checkNotifications() async {
       }
     } catch (e) {
       print("Error toggling favorite: $e");
-      // Optionally show a snackbar
     }
-  }
-
-  // The function for incrementing participant count on approval has been removed as it was unused.
-
-  @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
   }
 
   void showJoinRequestSheet(
@@ -279,20 +271,15 @@ void checkNotifications() async {
                                       .doc(creatorId)
                                       .collection('notifications')
                                       .add({
-                                        'type':
-                                            'join_request', // Bu tip bildirimleri NotificationsPage'de filtreleyebilirsiniz
+                                        'type': 'join_request',
                                         'message':
                                             '${FirebaseAuth.instance.currentUser?.displayName ?? 'Bir kullanıcı'} "${eventTitle}" etkinliğinize katılmak için istek gönderdi.',
                                         'eventId': eventId,
-                                        'eventTitle':
-                                            eventTitle, // İstek bildiriminde eventTitle da olsun
+                                        'eventTitle': eventTitle,
                                         'senderId': currentUserId,
-                                        'requestId':
-                                            joinRequestRef
-                                                .doc()
-                                                .id, // Oluşturulan isteğin ID'si (opsiyonel, eğer gerekiyorsa)
+                                        'requestId': joinRequestRef.doc().id,
                                         'timestamp':
-                                            FieldValue.serverTimestamp(), // 'createdAt' yerine 'timestamp' kullanıyorsanız
+                                            FieldValue.serverTimestamp(),
                                         'read': false,
                                       });
 
@@ -342,6 +329,13 @@ void checkNotifications() async {
     );
   }
 
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF6F2DBD);
     return Scaffold(
@@ -358,7 +352,7 @@ void checkNotifications() async {
         backgroundColor: primaryColor,
         actions: [
           IconButton(
-            icon: const Icon(Icons.star,size: 25,),
+            icon: const Icon(Icons.star, size: 25),
             onPressed: () {
               Navigator.push(
                 context,
@@ -374,7 +368,7 @@ void checkNotifications() async {
               });
             },
           ),
-IconButton(
+          IconButton(
             icon: Stack(
               clipBehavior: Clip.none,
               children: [
@@ -402,9 +396,7 @@ IconButton(
               await Future.delayed(Duration(milliseconds: 500));
               checkNotifications();
             },
-          )
-
-
+          ),
         ],
       ),
       body: Column(
@@ -419,18 +411,31 @@ IconButton(
                 Container(
                   margin: const EdgeInsets.only(right: 8.0),
                   child: IconButton(
-                    onPressed: () {
-                      Navigator.push(
+                    onPressed: () async {
+                      // Pass current filter values to FilterScreen
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder:
                               (context) => FilterScreen(
-                                onApplyFilters: (selectedFilters) {
-                                  print("Seçilen filtreler: $selectedFilters");
+                                onApplyFilters: (filters) {
+                                  // This callback is triggered when "Apply" button is pressed in FilterScreen
+                                  setState(() {
+                                    _selectedCategoryFilter =
+                                        filters['category'];
+                                    _selectedDateFilter = filters['date'];
+                                    _attendeesMinFilter =
+                                        filters['attendeesMin'];
+                                    _attendeesMaxFilter =
+                                        filters['attendeesMax'];
+                                    _selectedGenderFilter = filters['gender'];
+                                  });
                                 },
                               ),
                         ),
                       );
+                      // If the user navigates back without applying filters, nothing happens.
+                      // If applied, the onApplyFilters callback above handles the state update.
                     },
                     icon: const Icon(Icons.filter_list, color: Colors.white),
                     style: IconButton.styleFrom(
@@ -471,6 +476,7 @@ IconButton(
                   child: IconButton(
                     onPressed: () {
                       print('Arama butonu tıklandı: ${searchController.text}');
+                      // No need to call setState here as onChanged already does it
                     },
                     icon: const Icon(Icons.search, color: Colors.white),
                     style: IconButton.styleFrom(
@@ -498,11 +504,9 @@ IconButton(
                   );
                 }
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  // Added waiting state
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  // Combined checks
                   return const Center(
                     child: Text("Gösterilecek etkinlik bulunamadı."),
                   );
@@ -510,6 +514,8 @@ IconButton(
 
                 var events = snapshot.data!.docs;
                 final searchText = searchController.text.toLowerCase();
+
+                // Apply search filter first
                 if (searchText.isNotEmpty) {
                   events =
                       events.where((event) {
@@ -519,14 +525,99 @@ IconButton(
                             (data?['title'] as String? ?? '').toLowerCase();
                         return title.contains(searchText);
                       }).toList();
-                  if (events.isEmpty) {
-                    // Check after filtering
-                    return Center(
-                      child: Text(
-                        "Aramanızla eşleşen etkinlik bulunamadı: \"$searchText\"",
-                      ),
-                    );
-                  }
+                }
+
+                // Apply category filter
+                if (_selectedCategoryFilter != null &&
+                    _selectedCategoryFilter != 'Tümü') {
+                  // Assuming 'Tümü' or similar implies no filter
+                  events =
+                      events.where((event) {
+                        final Map<String, dynamic>? data =
+                            event.data() as Map<String, dynamic>?;
+                        final eventType =
+                            (data?['eventType'] as String? ?? '').toLowerCase();
+                        return eventType ==
+                            _selectedCategoryFilter!.toLowerCase();
+                      }).toList();
+                }
+
+                // Apply date filter
+                if (_selectedDateFilter != null) {
+                  events =
+                      events.where((event) {
+                        final Map<String, dynamic>? data =
+                            event.data() as Map<String, dynamic>?;
+                        final eventDateString = data?['eventDate'] as String?;
+                        if (eventDateString == null ||
+                            eventDateString.isEmpty) {
+                          return false;
+                        }
+                        try {
+                          final eventDate = DateTime.parse(eventDateString);
+                          // Compare only dates, ignore time
+                          return eventDate.year == _selectedDateFilter!.year &&
+                              eventDate.month == _selectedDateFilter!.month &&
+                              eventDate.day == _selectedDateFilter!.day;
+                        } catch (e) {
+                          print("Error parsing date for filter: $e");
+                          return false;
+                        }
+                      }).toList();
+                }
+
+                // Apply attendees filter
+                events =
+                    events.where((event) {
+                      final Map<String, dynamic>? data =
+                          event.data() as Map<String, dynamic>?;
+                      final maxParticipants =
+                          (data?['maxParticipants'] as num?)?.toInt() ?? 0;
+                      // If maxParticipants is 0, it means unlimited, so it always passes the filter
+                      if (maxParticipants == 0) return true;
+
+                      return maxParticipants >= _attendeesMinFilter &&
+                          maxParticipants <= _attendeesMaxFilter;
+                    }).toList();
+
+                // Apply gender filter (assuming 'gender' field exists in event data)
+                if (_selectedGenderFilter != 'Herkes') {
+                  events =
+                      events.where((event) {
+                        final Map<String, dynamic>? data =
+                            event.data() as Map<String, dynamic>?;
+                        final requiredGender =
+                            (data?['requiredGender'] as String? ?? '')
+                                .toLowerCase();
+                        return requiredGender ==
+                                _selectedGenderFilter.toLowerCase() ||
+                            requiredGender ==
+                                'herkes'; // If event is for 'Herkes', it passes
+                      }).toList();
+                }
+
+                if (events.isEmpty && searchText.isNotEmpty) {
+                  return Center(
+                    child: Text(
+                      "Aramanızla eşleşen etkinlik bulunamadı: \"$searchText\"",
+                    ),
+                  );
+                } else if (events.isEmpty &&
+                    searchText.isEmpty &&
+                    (_selectedCategoryFilter != null ||
+                        _selectedDateFilter != null ||
+                        _attendeesMinFilter != 1 ||
+                        _attendeesMaxFilter != 100 ||
+                        _selectedGenderFilter != 'Herkes')) {
+                  return const Center(
+                    child: Text(
+                      "Seçilen filtrelere uygun etkinlik bulunamadı.",
+                    ),
+                  );
+                } else if (events.isEmpty) {
+                  return const Center(
+                    child: Text("Gösterilecek etkinlik bulunamadı."),
+                  );
                 }
 
                 return ListView.builder(
@@ -581,9 +672,7 @@ IconButton(
                     }
 
                     return Card(
-                      color: getCardColor(
-                        eventType,
-                      ), // Kategoriye göre arka plan rengi
+                      color: getCardColor(eventType),
                       margin: const EdgeInsets.symmetric(
                         horizontal: 8.0,
                         vertical: 4.0,
@@ -595,7 +684,7 @@ IconButton(
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(12.0),
                         leading: Icon(
-                          getEventIcon(eventType), // Kategoriye göre ikon
+                          getEventIcon(eventType),
                           color: primaryColor,
                           size: 30,
                         ),
@@ -716,28 +805,25 @@ IconButton(
           BottomNavigationBarItem(
             icon: Icon(Icons.home_filled),
             label: 'Ana Sayfa',
-          ), // Changed icon
+          ),
           BottomNavigationBarItem(
             icon: Icon(
               Icons.add_rounded,
-              size: 25.0, // 🔹 Boyut
-              color: Color.fromARGB(255, 46, 3, 54), 
-              
+              size: 25.0,
+              color: Color.fromARGB(255, 46, 3, 54),
             ),
-             // Changed icon
             label: 'Etkinlik Oluştur',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline_rounded),
             label: 'Profil',
-          ), // Changed icon
+          ),
         ],
         selectedItemColor: primaryColor,
-        unselectedItemColor:
-            Colors.grey[600], // Slightly darker unselected color
-        type: BottomNavigationBarType.fixed, // Ensures all labels are visible
-        backgroundColor: Colors.white, // Added background color
-        elevation: 8.0, // Added elevation
+        unselectedItemColor: Colors.grey[600],
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        elevation: 8.0,
       ),
     );
   }
