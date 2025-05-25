@@ -99,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
                                 MaterialTapTargetSize.shrinkWrap,
                           ),
                           Text(
-                            "Oturum açık kalsın",
+                            "Beni Hatırla",
                             style: GoogleFonts.montserrat(fontSize: 14),
                           ),
                         ],
@@ -198,6 +198,7 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
+
   Widget logoField() {
     return Text(
       "JoinUp",

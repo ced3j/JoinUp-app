@@ -7,102 +7,81 @@ import 'package:lucide_icons/lucide_icons.dart'; // LucideIcons'ı import ettik
 class EventService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Oluşturduğum etkinlikleri çek
+  // -------------------- OLUŞTURDUKLARIM --------------------
   Future<List<Event>> getCreatedEvents(String userId) async {
-    final snapshot =
+    final snap =
         await _firestore
             .collection('events')
             .where('creatorId', isEqualTo: userId)
             .get();
 
-    return snapshot.docs.map((doc) {
+    return snap.docs.map((doc) {
       final data = doc.data();
-
-      DateTime duration;
-      final rawDuration = data['duration'];
-
-      if (rawDuration is Timestamp) {
-        duration = rawDuration.toDate();
-      } else if (rawDuration is String) {
-        duration = DateTime.tryParse(rawDuration) ?? DateTime.now();
-      } else {
-        duration = DateTime.now();
-      }
-
-      // Sadece locationName'i çekiyoruz, GeoPoint'i yok sayıyoruz.
-      String locationText = 'Konum Bilgisi Yok';
-      if (data.containsKey('locationName') &&
-          data['locationName'] is String &&
-          data['locationName'].isNotEmpty) {
-        locationText = data['locationName'];
-      }
-
-      // minParticipants, maxParticipants, currentParticipants alanlarını güvenli bir şekilde al
-      final int minParticipants = data['minParticipants'] ?? 0;
-      final int maxParticipants = data['maxParticipants'] ?? 0;
-      final int currentParticipants = data['currentParticipants'] ?? 0;
-
-      return Event(
-        eventId: doc.id,
-        title: data['title'] ?? '',
-        location: locationText, // Güncellenmiş location
-        description: data['description'] ?? '',
-        gender: data['gender'] ?? '',
-        duration: duration,
-        creatorId: data['creatorId'] ?? '',
-        eventType: data['eventType'] ?? '', // eventType alanı
-        minParticipants: minParticipants, // Yeni eklendi
-        maxParticipants: maxParticipants, // Yeni eklendi
-        currentParticipants: currentParticipants, // Yeni eklendi
-      );
+      return _eventFromDoc(doc.id, data);
     }).toList();
   }
 
-  // Katıldığım etkinlikleri çek
+  // -------------------- KATILDIKLARIM (düzeltilmiş) --------
   Future<List<Event>> getAttendedEvents(String userId) async {
-    final snap =
+    // 1) attendedEvents koleksiyonunda sadece eventId (veya docId) var
+    final attendedSnap =
         await _firestore
             .collection('users')
             .doc(userId)
             .collection('attendedEvents')
             .get();
 
-    return snap.docs.map((doc) {
-      final d = doc.data();
+    // 2) Her eventId için gerçek etkinlik belgesini (events) çek
+    final List<Event> attendedEvents = [];
+    for (final doc in attendedSnap.docs) {
+      // eventId ya alanda ya da doc.id’de olabilir
+      final eventId = doc.data()['eventId'] ?? doc.id;
 
-      final joinedAt = d['joinedAt'];
-      DateTime duration =
-          joinedAt is Timestamp ? joinedAt.toDate() : DateTime.now();
+      if (eventId == null) continue;
 
-      // Sadece eventLocationName'i çekiyoruz, eventLocation (GeoPoint) yok sayıyoruz.
-      String locationText = 'Konum Bilgisi Yok';
-      if (d.containsKey('eventLocationName') &&
-          d['eventLocationName'] is String &&
-          d['eventLocationName'].isNotEmpty) {
-        locationText = d['eventLocationName'];
-      }
+      final eventDoc = await _firestore.collection('events').doc(eventId).get();
 
-      // Katıldığım etkinlikler için bu alanlar users/userId/attendedEvents içinde genellikle olmaz.
-      // Eğer oraya da kaydediyorsan veritabanı yapına göre burayı düzenleyebilirsin.
-      // Şimdilik varsayılan 0 değerlerini atıyoruz.
-      final int minParticipants = d['minParticipants'] ?? 0;
-      final int maxParticipants = d['maxParticipants'] ?? 0;
-      final int currentParticipants = d['currentParticipants'] ?? 0;
+      if (!eventDoc.exists) continue;
 
-      return Event(
-        eventId: d['eventId'] ?? '',
-        title: d['eventTitle'] ?? '',
-        location: locationText, // Güncellenmiş location
-        description: '', // Katıldığım etkinliklerde bu bilgi genelde tam olmaz
-        gender: '', // Katıldığım etkinliklerde bu bilgi genelde tam olmaz
-        duration: duration,
-        creatorId: '', // Katıldığım etkinliklerde bu bilgi genelde tam olmaz
-        eventType: d['eventType'] ?? '',
-        minParticipants: minParticipants, // Yeni eklendi
-        maxParticipants: maxParticipants, // Yeni eklendi
-        currentParticipants: currentParticipants, // Yeni eklendi
-      );
-    }).toList();
+      attendedEvents.add(_eventFromDoc(eventId, eventDoc.data()!));
+    }
+    return attendedEvents;
+  }
+
+  // ---------------------------------------------------------
+  // Ortak: Firestore verisini Event modeline dönüştür
+  Event _eventFromDoc(String id, Map<String, dynamic> data) {
+    // duration alanı
+    DateTime duration;
+    final rawDur = data['duration'];
+    if (rawDur is Timestamp) {
+      duration = rawDur.toDate();
+    } else if (rawDur is String) {
+      duration = DateTime.tryParse(rawDur) ?? DateTime.now();
+    } else {
+      duration = DateTime.now();
+    }
+
+    // locationName
+    String locationText = 'Konum Bilgisi Yok';
+    if (data['locationName'] != null &&
+        data['locationName'].toString().trim().isNotEmpty) {
+      locationText = data['locationName'];
+    }
+
+    return Event(
+      eventId: id,
+      title: data['title'] ?? '',
+      location: locationText,
+      description: data['description'] ?? '',
+      gender: data['gender'] ?? '',
+      duration: duration,
+      creatorId: data['creatorId'] ?? '',
+      eventType: data['eventType'] ?? '',
+      minParticipants: data['minParticipants'] ?? 0,
+      maxParticipants: data['maxParticipants'] ?? 0,
+      currentParticipants: data['currentParticipants'] ?? 0,
+    );
   }
 
   // Etkinliği sil
