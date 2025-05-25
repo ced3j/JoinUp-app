@@ -99,7 +99,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             ),
             const SizedBox(height: 24),
             const Text(
-              "E-posta adresinizi girin",
+              "E-posta adresinizi girin" ,
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
