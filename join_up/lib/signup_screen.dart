@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:join_up/services/auth_service.dart';
 import 'package:join_up/login_screen.dart';
+import 'main.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -27,9 +28,7 @@ class _SignupPageState extends State<SignupPage> {
     String username = usernameController.text.trim();
 
     if (password != confirmPassword) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Şifreler uyuşmuyor!")));
+      showCustomSnackBar(context, "Şifreler uyuşmuyor!", 2);
       return;
     }
 
@@ -39,18 +38,14 @@ class _SignupPageState extends State<SignupPage> {
       // Firestore'a kullanıcı bilgilerini ekle
       await authService.saveUserToFirestore(user.uid, username, email);
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Kayıt Başarılı!")));
+      showCustomSnackBar(context, "Kayıt başarılı!", 1);
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const LoginPage()),
       );
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Kayıt Başarısız!")));
+      showCustomSnackBar(context, "Kayıt başarısız!", 2);
     }
   }
 

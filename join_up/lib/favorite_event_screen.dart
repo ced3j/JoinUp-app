@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'event_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'main.dart';
 
 class FavoritesPage extends StatefulWidget {
   final Set<String> favorites;
@@ -115,13 +116,12 @@ class _FavorilerSayfasiState extends State<FavoritesPage> {
               final eventId = event['id'];
               final title = event['title'] ?? 'Başlıksız';
               final location = event['locationName'] ?? 'Konum belirtilmemiş';
-              final attendeeCount = event['currentParticipiants'] ?? 0;
 
               return Card(
                 child: ListTile(
                   leading: const Icon(Icons.star, color: Colors.amber),
                   title: Text(title),
-                  subtitle: Text('$location • $attendeeCount kişi katılıyor'),
+                  subtitle: Text(location),
                   trailing: IconButton(
                     icon: Container(
                       padding: const EdgeInsets.all(8),
@@ -163,12 +163,10 @@ class _FavorilerSayfasiState extends State<FavoritesPage> {
                         ),
                       );
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            "Bu etkinliğin katılımcısı değilsiniz.",
-                          ),
-                        ),
+                      showCustomSnackBar(
+                        context,
+                        "Bu etkinliğin katılımcısı değilsiniz!",
+                        2,
                       );
                     }
                   },

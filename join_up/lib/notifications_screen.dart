@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:join_up/event_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'main.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -139,10 +140,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             ),
                           );
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Etkinlik bilgisi bulunamadı"),
-                            ),
+                          showCustomSnackBar(
+                            context,
+                            "Etkinlik bilgisi bulunamadı!",
+                            2,
                           );
                         }
                       },
@@ -310,14 +311,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                                         'read': false,
                                                       });
 
-                                                  ScaffoldMessenger.of(
+                                                  showCustomSnackBar(
                                                     context,
-                                                  ).showSnackBar(
-                                                    const SnackBar(
-                                                      content: Text(
-                                                        "Katılım onaylandı",
-                                                      ),
-                                                    ),
+                                                    "Katılım onaylandı!",
+                                                    1,
                                                   );
                                                 },
                                               ),
