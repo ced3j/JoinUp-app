@@ -153,6 +153,7 @@ class _HomePageState extends State<HomePage> {
     String creatorId,
     int currentParticipants,
     int maxParticipants,
+    String description,
   ) {
     final currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
@@ -194,9 +195,15 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  "Katılım için etkinlik sahibinin onaylaması gerekiyor.",
+                  "Katılım için etkinlik sahibinin onaylaması gerekiyor.\n",
                   style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                 ),
+                
+                Text(
+                  description,
+                  style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                ),
+
                 const SizedBox(height: 8),
                 Text(
                   "Mevcut Katılımcı: $currentParticipants/$maxParticipants",
@@ -643,7 +650,10 @@ class _HomePageState extends State<HomePage> {
                         data?['eventType'] as String? ?? 'Diğer';
                     final String eventDateString =
                         data?['eventDate'] as String? ?? '';
+                    final String description = data?['description'] as String? ?? 'Açıklama yok';
 
+                    
+                    
                     String formattedDate = 'Tarih Belirtilmemiş';
                     if (eventDateString.isNotEmpty) {
                       try {
@@ -745,6 +755,7 @@ class _HomePageState extends State<HomePage> {
                             creatorId,
                             currentParticipants,
                             maxParticipants,
+                            description,
                           );
                         },
                       ),
