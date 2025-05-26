@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:join_up/main.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -35,25 +36,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   Future<void> _resetPassword() async {
     String email = _emailController.text.trim();
     if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Lütfen e-posta adresinizi girin")),
-      );
+      showCustomSnackBar(context, "Lütfen email adresinizi girin!", 2);
       return;
     }
 
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            "Şifre sıfırlama bağlantısı $email adresine gönderildi.",
-          ),
-        ),
-      );
+      showCustomSnackBar(context, "Şifre sıfırlama adresinize gönderildi!", 1);
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Hata: ${e.toString()}")));
+      showCustomSnackBar(context, "Hata: ${e.toString()}", 2);
     }
   }
 
@@ -99,11 +90,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             ),
             const SizedBox(height: 24),
             const Text(
-              "E-posta adresinizi girin" ,
+              "E-posta adresinizi girin",
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: darkColor
+                color: darkColor,
               ),
             ),
             const SizedBox(height: 8),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'event_screen.dart'; // sohbet ekranını import et
+import 'main.dart';
 
 class EventService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -51,7 +52,7 @@ class EventService {
   // Ortak: Firestore verisini Event modeline dönüştür
   Event _eventFromDoc(String id, Map<String, dynamic> data) {
     // duration alanı
-DateTime createdAt;
+    DateTime createdAt;
     final rawCreatedAt = data['createdAt'];
     if (rawCreatedAt is Timestamp) {
       createdAt = rawCreatedAt.toDate();
@@ -81,7 +82,6 @@ DateTime createdAt;
       currentParticipants: data['currentParticipants'] ?? 0,
       createdAt: createdAt, // 🔥 BURASI EKLENDİ
     );
-
   }
 
   // Etkinliği sil
@@ -163,7 +163,7 @@ class Event {
   final int minParticipants; // Yeni eklendi
   final int maxParticipants; // Yeni eklendi
   final int currentParticipants; // Yeni eklendi
-  final DateTime createdAt; 
+  final DateTime createdAt;
 
   Event({
     required this.eventId,
@@ -308,10 +308,10 @@ class _MyEventsPageState extends State<MyEventsPage>
                       await _eventService.deleteEvent(e.eventId);
                       setState(() {}); // listeyi yenile
                       // Kullanıcıya bilgi ver
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Etkinlik başarıyla silindi.'),
-                        ),
+                      showCustomSnackBar(
+                        context,
+                        "Etkinlik başarıyla silindi!",
+                        1,
                       );
                     }
                   },
@@ -319,9 +319,7 @@ class _MyEventsPageState extends State<MyEventsPage>
                 : null,
         onTap: () {
           if (e.eventId.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Etkinlik bilgisi bulunamadı")),
-            );
+            showCustomSnackBar(context, "Etkinlik bilgisi bulunamadı!", 2);
             return;
           }
 

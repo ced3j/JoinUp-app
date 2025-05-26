@@ -5,6 +5,7 @@ import 'package:join_up/home_screen.dart';
 import 'package:join_up/forgotpass_screen.dart';
 import 'package:join_up/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'main.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -43,18 +44,14 @@ class _LoginPageState extends State<LoginPage> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('keepLoggedIn', keepMeLoggedIn);
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Giriş Başarılı!")));
+      showCustomSnackBar(context, "Giriş başarılı!", 1);
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const HomePage()),
       );
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Giriş Başarısız!")));
+      showCustomSnackBar(context, "Giriş başarısız!", 2);
     }
   }
 

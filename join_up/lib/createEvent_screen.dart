@@ -5,6 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:join_up/location_pick_screen.dart';
 // Removed: import 'package:join_up/home_screen.dart'; // Not needed for Navigator.pop
 import 'package:geocoding/geocoding.dart';
+import 'main.dart';
 
 class CreateEventPage extends StatefulWidget {
   final String userId;
@@ -76,16 +77,14 @@ class _CreateEventPageState extends State<CreateEventPage> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedDate == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Lütfen bir tarih seçin')));
+      showCustomSnackBar(context, "Lütfen bir tarih seçin!", 2);
+
       return;
     }
 
     if (_selectedLocation == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Lütfen bir konum seçin')));
+      showCustomSnackBar(context, "Lütfen bir konum seçin", 2);
+
       return;
     }
 
@@ -93,27 +92,26 @@ class _CreateEventPageState extends State<CreateEventPage> {
     final int? maxParticipants = int.tryParse(_maxParticipantsController.text);
 
     if (minParticipants == null || maxParticipants == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Lütfen geçerli kişi sayısı aralığı girin.'),
-        ),
+      showCustomSnackBar(
+        context,
+        "Lütfen geçerli bir kişi sayısı aralığı girin!",
+        2,
       );
+
       return;
     }
     if (minParticipants <= 0 || maxParticipants <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kişi sayıları pozitif olmalıdır.')),
-      );
+      showCustomSnackBar(context, "Kişi sayıları pozitif olmalıdır", 2);
+
       return;
     }
     if (minParticipants > maxParticipants) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Minimum kişi sayısı, maksimum kişi sayısından küçük veya eşit olmalıdır.',
-          ),
-        ),
+      showCustomSnackBar(
+        context,
+        "Minimum kişi sayısı, maksimum kişi sayısından küçük veya eşit olmalıdır",
+        2,
       );
+
       return;
     }
 
@@ -143,10 +141,10 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
       _resetForm();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('"${_titleController.text}" etkinliği oluşturuldu'),
-        ),
+      showCustomSnackBar(
+        context,
+        '"${_titleController.text}" etkinliği oluşturuldu',
+        1,
       );
       // After successful creation, pop back to the previous screen (HomePage)
       if (mounted) {
@@ -154,9 +152,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         Navigator.pop(context);
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Hata: ${e.toString()}')));
+      showCustomSnackBar(context, 'Hata: ${e.toString()}', 1);
     } finally {
       if (mounted) {
         // Check if the widget is still in the tree

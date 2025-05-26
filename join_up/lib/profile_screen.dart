@@ -7,6 +7,7 @@ import 'package:join_up/account_screen.dart';
 import 'package:join_up/login_screen.dart';
 import 'package:join_up/my_events_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'main.dart';
 
 const Color primaryColor = Color(0xFF6F2DBD);
 const Color accentColor = Color(0xFFFFD600);
@@ -72,10 +73,10 @@ class _ProfilePageState extends State<ProfilePage> {
         _email = "Lütfen tekrar deneyin";
         _profileImageUrl = null;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Kullanıcı bilgileri yüklenirken bir hata oluştu.'),
-        ),
+      showCustomSnackBar(
+        context,
+        "Kullanıcı bilgileri yüklenirken bir hata oluştu!",
+        2,
       );
     }
   }

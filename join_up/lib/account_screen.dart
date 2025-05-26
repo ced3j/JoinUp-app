@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/services.dart';
+import 'main.dart';
 
 const Color primaryColor = Color(0xFF6F2DBD);
 const Color accentColor = Color(0xFFFFD600);
@@ -108,11 +109,13 @@ class _AccountScreenState extends State<AccountScreen> {
 
     if (user == null || password.isEmpty) {
       // Şifre boşsa uyarı ver
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Lütfen kimlik doğrulama şifrenizi girin."),
-        ),
+
+      showCustomSnackBar(
+        context,
+        "Lütfen kimlik doğrulama şifrenizi girin!",
+        2,
       );
+
       return;
     }
 
@@ -139,9 +142,8 @@ class _AccountScreenState extends State<AccountScreen> {
         // Profil fotoğrafı güncellemesi artık burada değil, doğrudan _showProfileSelectionDialog içinde yapılacak
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bilgiler başarıyla güncellendi.')),
-      );
+      showCustomSnackBar(context, "Bilgiler başarıyla güncellendi", 1);
+
       // Başarılı güncelleme sonrası şifre alanını temizle
       _passwordController.clear();
     } on FirebaseAuthException catch (e) {
@@ -159,9 +161,7 @@ class _AccountScreenState extends State<AccountScreen> {
         message = 'Geçersiz e-posta formatı.';
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Hata: $message")));
+      showCustomSnackBar(context, "Hata: $message", 2);
     }
   }
 
@@ -174,16 +174,14 @@ class _AccountScreenState extends State<AccountScreen> {
     final confirmNewPassword = _confirmNewPasswordController.text.trim();
 
     if (user == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Kullanıcı bulunamadı.")));
+      showCustomSnackBar(context, "Kullanıcı bulunamadı!", 2);
+
       return;
     }
 
     if (newPassword != confirmNewPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Yeni şifreler eşleşmiyor.")),
-      );
+      showCustomSnackBar(context, "Şifreler eşleşmiyor!", 2);
+
       return;
     }
 
@@ -194,10 +192,7 @@ class _AccountScreenState extends State<AccountScreen> {
       );
       await user.reauthenticateWithCredential(credential);
       await user.updatePassword(newPassword);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Şifre başarıyla güncellendi.")),
-      );
+      showCustomSnackBar(context, "Şifre başarıyla güncellendi", 1);
 
       _oldPasswordController.clear();
       _newPasswordController.clear();
@@ -211,9 +206,8 @@ class _AccountScreenState extends State<AccountScreen> {
       } else if (e.code == 'requires-recent-login') {
         message = "Bu işlem için tekrar giriş yapmanız gerekiyor.";
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Hata: $message")));
+
+      showCustomSnackBar(context, "Hata: $message", 2);
     }
   }
 
@@ -226,15 +220,13 @@ class _AccountScreenState extends State<AccountScreen> {
             .collection('users')
             .doc(user.uid)
             .update({'profileImage': imageUrl});
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profil fotoğrafı güncellendi.')),
-        );
+        showCustomSnackBar(context, "Profil fotoğrafı güncellendi", 1);
       } catch (e) {
         print("Error saving profile image: $e");
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profil fotoğrafı güncellenirken bir hata oluştu.'),
-          ),
+        showCustomSnackBar(
+          context,
+          "Profil fotoğrafı güncellenirken bir hata oluştu",
+          2,
         );
       }
     }

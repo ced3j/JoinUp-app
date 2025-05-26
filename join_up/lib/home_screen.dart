@@ -10,6 +10,7 @@ import 'package:join_up/profile_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:join_up/filter_screen.dart'; // Assuming this import is correct
 import 'package:google_fonts/google_fonts.dart';
+import 'main.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -307,17 +308,15 @@ class _HomePageState extends State<HomePage> {
                                   print("Error sending join request: $e");
                                   if (context.mounted) {
                                     Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          "İstek gönderilirken bir hata oluştu: ${e.toString()}",
-                                        ),
-                                      ),
+                                    showCustomSnackBar(
+                                      context,
+                                      "İstek gönderilirken bir hata oluştu: ${e.toString()}",
+                                      2,
                                     );
                                   }
                                 }
                               },
-                      child: const Text("İstek Gönder"),
+                      child: const Text("İstek Gönder"), //
                     ),
                   ],
                 ),
@@ -784,12 +783,10 @@ class _HomePageState extends State<HomePage> {
                   ),
                 );
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Etkinlik oluşturmak için giriş yapmalısınız.',
-                    ),
-                  ),
+                showCustomSnackBar(
+                  context,
+                  "Etkinlik oluşturmak için giriş yapmalısınız.",
+                  2,
                 );
               }
               break;
