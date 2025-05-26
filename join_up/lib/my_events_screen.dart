@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'event_screen.dart'; // sohbet ekranını import et
 import 'main.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class EventService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -341,9 +342,13 @@ class _MyEventsPageState extends State<MyEventsPage>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Etkinliklerim",
-          style: TextStyle(color: Colors.white),
+       title: Text(
+          'Etkinliklerim',
+          style: GoogleFonts.montserrat(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
